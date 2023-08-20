@@ -1,0 +1,54 @@
+{
+  "HarmonyId": "JAN.soundpacks",
+  "DisplayName": "The Soundpack Mod",
+  "Authors": [
+    "JAN"
+  ],
+  "Description": "This mod allows for the customization of all music and sounds of the game.",
+  "Version": "1.0.0",
+  "RequiredMods": [],
+  "Settings": {
+    "TextInputSettings": [
+      {
+        "Name": "Selected Soundpack",
+        "Description": "The soundpack you are going to listen to.",
+        "DefaultValue": "No Soundpack Selected",
+        "Regex": "[0-9A-Za-z]",
+        "CharacterLimit": 30,
+        "AvailableInGame": false
+      }
+    ],
+    "CheckboxSettings": [
+      {
+        "Name": "Only Allow Custom Music",
+        "Description": "Only the music will be customized, sounds will be base game's",
+        "DefaultValue": false,
+        "AvailableInGame": false
+      }
+    ],
+    "CheckboxSettings": [
+      {
+        "Name": "Randomize Soundpacks",
+        "Description": "At the start of a game, the selected soundpack will be randomized. This will change the Selected Soundpack text input box too to the one chosen at random.",
+        "DefaultValue": false,
+        "AvailableInGame": false
+      }
+    ],
+    "CheckboxSettings": [
+      {
+        "Name": "Looping Rapid Mode",
+        "Description": "Makes ",
+        "DefaultValue": true,
+        "AvailableInGame": false
+      }
+    ],
+    "CheckboxSettings": [
+      {
+        "Name": "Deactivate Custom Triggers",
+        "Description": "Disables soundpacks to have specific music when a specific trigger in-game happens(such as being a role, day 1, etc)",
+        "DefaultValue": false,
+        "AvailableInGame": false
+      }
+    ]
+  }
+}
