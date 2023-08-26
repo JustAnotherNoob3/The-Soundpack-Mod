@@ -10,14 +10,14 @@
       <img alt="Discord" src="https://img.shields.io/discord/1003392508568535101?label=discord&logo=discord&style=flat" />
     </a>
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/graphs/contributors">
-      <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/JustAnotherNoob3/The-Soundpack-Mod/" />
+      <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/JustAnotherNoob3/The-Soundpack-Mod" />
     </a>
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/graphs/contributors">
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/issues">
-      <img alt="GitHub Issues" src="https://img.shields.io/github/issues/JustAnotherNoob3/The-Soundpack-Mod/?color=0088ff" />
+      <img alt="GitHub Issues" src="https://img.shields.io/github/issues/JustAnotherNoob3/The-Soundpack-Mod?color=0088ff" />
     </a>
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/pulls">
-      <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/JustAnotherNoob3/The-Soundpack-Mod/?color=0088ff" />
+      <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/JustAnotherNoob3/The-Soundpack-Mod?color=0088ff" />
     </a>
     <br/>
     <br/>
