@@ -7,7 +7,7 @@ hello
 
 <br>
   <p align="center">
-    <a href="https://discord.gg/AdpRqzstfj">
+    <a href="https://discord.gg/ht8ttc3R8E">
       <img alt="Discord" src="https://img.shields.io/discord/1003392508568535101?label=discord&logo=discord&style=flat" />
     </a>
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/graphs/contributors">
@@ -28,7 +28,7 @@ hello
   </p>
 
   <p align="center">
-    <a href="https://discord.gg/AdpRqzstfj">Join the Discord!</a>
+    <a href="https://discord.gg/ht8ttc3R8E">Join the Discord!</a>
     ·
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/issues/new/choose">Report Issues</a>
     ·
@@ -37,28 +37,16 @@ hello
   </p>
 
 
-<p align="center">Love the project? Please consider <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/Contribution.md">contributing</a> to help it improve.</p>
-
-
 
 
 ___
 ### The Soundpack Mod
-With this mod, you can change the sounds and music for the game.
-
-*to be written*...
-
-____
-### Building this project
-
-*to be written*...
+With this mod, you can change the sounds and music for the game. You can customize the game's music and sounds even further using the new <b>Custom Triggers</b>! 
 
 ____
 ### Contributing
-You would need to follow the "Building this project", and you can create a pull request.
+You would need to follow the "Building this project", and you can create a pull request. I'll check it. At some point. Maybe.
 
-
-All help is appreciated!
 
 
 ___
@@ -77,5 +65,6 @@ To quote a developer in the official Town of Salem 2 [Discord](https://discord.g
 ___
 ### Credits
 [Curtbot9000](https://github.com/Curtbot9000) - Made SalemModLoader.
+<small>Join <b>their</b> <a href="https://discord.gg/AdpRqzstfj">Discord server</a>!</small
 
 [DjShinter](https://github.com/DjShinter) - Thumbnail, Small contributions.
