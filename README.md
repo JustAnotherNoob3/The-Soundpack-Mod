@@ -8,7 +8,7 @@ hello
 <br>
   <p align="center">
     <a href="https://discord.gg/ht8ttc3R8E">
-      <img alt="Discord" src="https://img.shields.io/discord/1003392508568535101?label=discord&logo=discord&style=flat" />
+      <img alt="Discord" src="https://img.shields.io/discord/1114293748373925940?label=discord&logo=discord&style=flat" />
     </a>
     <a href="https://github.com/JustAnotherNoob3/The-Soundpack-Mod/graphs/contributors">
       <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/JustAnotherNoob3/The-Soundpack-Mod" />
