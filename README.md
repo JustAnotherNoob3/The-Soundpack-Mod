@@ -65,7 +65,6 @@ To quote a developer in the official Town of Salem 2 [Discord](https://discord.g
 ___
 ### Credits
 [Curtbot9000](https://github.com/Curtbot9000) - Made SalemModLoader.
-
-<small>Join <b>their</b> <a href="https://discord.gg/AdpRqzstfj">Discord server</a>!</small>
+<p>Join <b>their</b> <a href="https://discord.gg/AdpRqzstfj">Discord server</a>!</p>
 
 [DjShinter](https://github.com/DjShinter) - Thumbnail, Small contributions.
