@@ -10,7 +10,6 @@ namespace OtherStuff{
     [HarmonyPatch(typeof(Game.Interface.PickNamesPanel), "Start")]
     class InitGame{
         static public void Prefix(){
-            Debug.LogError("heheheha");
             //! IF SOMEONE REPORTS THE RAPID STUFF FOLLOWING OTHER GAME BE SURE TO MAKE LOOP FALSE
             SoundpackUtils.horsemen = 0;
             SoundpackUtils.dayOne = true;
@@ -21,7 +20,6 @@ namespace OtherStuff{
             if(ModSettings.GetBool("Randomize Soundpacks") && SoundpackUtils.directories.Count > 0){
                 System.Random r = new();
                 ModSettings.SetString("Selected Soundpack", SoundpackUtils.directories[r.Next(SoundpackUtils.directories.Count)]);
-                Debug.Log(ModSettings.GetString("Selected Soundpack"));
                 AudioController a = Object.FindObjectOfType<AudioController>();
                 a.StopMusic();
                 a.PlayMusic("Audio/Music/SelectionMusic");

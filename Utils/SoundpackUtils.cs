@@ -36,29 +36,21 @@ namespace Utils
                     }
                     RoleData roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
                     string roleFolderName = roleData.roleName;
-                    Debug.Log(roleFolderName);
                     if (dayOne && ogSoundPathNames[2] == "DiscussionMusic")
                     {
                         List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
-                        foreach (Role modifier in modifiers){
-                            Debug.LogError(modifier);
-                        }
                         if (modifiers.Contains(Role.FAST_MODE))
                         {
-                            Debug.LogError("it is fast mode");
                             gameVelocity = "FastMode";
                         }
                         else if (modifiers.Contains(Role.SLOW_MODE))
                         {
-                            Debug.LogError("it is slow mode");
                             gameVelocity = "SlowMode";
                         }
                         else
                         {
-                            Debug.LogError("no modifier");
                             gameVelocity = "";
                         }
-                        Debug.LogWarning("It is day one");
                         dayOne = false;
                         string pathToFirstDay = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName, "Music", "DayOne");
                         string customSoundPath = FindCustomSound(pathToFirstDay);
@@ -68,11 +60,6 @@ namespace Utils
                         customSoundPath = FindCustomSound(pathToFirstDay);
                         if (!string.IsNullOrEmpty(customSoundPath))
                             return customSoundPath;
-                        Debug.Log(pathToFirstDay + " was not found.");
-                    }
-                    else
-                    {
-                        Debug.LogWarning("not day 1");
                     }
                     if (ogSoundPathNames[2] == "Judgement")
                     {
@@ -116,7 +103,6 @@ namespace Utils
                             if (!string.IsNullOrEmpty(customProsSoundPath))
                                 return customProsSoundPath;
                         }
-                        if (Pepper.GetMyRole() == Role.EXECUTIONER) Debug.LogError("I am executioner. My target is: " + Service.Game.Sim.info.executionerTargetObservation.Data.targetPosition);
                         if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
                         {
                             //test
@@ -262,10 +248,8 @@ namespace Utils
             foreach (string extension in extensions)
             {
                 string fullPath = soundPath + extension;
-                Debug.LogError("Trying " + fullPath);
                 if (File.Exists(fullPath))
                 {
-                    Debug.LogError(fullPath + " found!");
                     return fullPath;
                 }
 
@@ -277,17 +261,13 @@ namespace Utils
         {
 
             directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-            Debug.Log(directoryPath);
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
-            Debug.Log("Working?");
             string[] fullDirectories = Directory.GetDirectories(directoryPath);
-            Debug.Log(fullDirectories);
             foreach (string dir in fullDirectories)
             {
-                Debug.Log(Path.GetFileName(dir));
                 directories.Add(Path.GetFileName(dir));
             }
         }
@@ -313,7 +293,6 @@ namespace Utils
                 case ".ogg":
                     return AudioType.OGGVORBIS;
                 default:
-                    Debug.LogWarning("AudioUtility: La extensión de archivo " + extension + " no es compatible.");
                     return AudioType.UNKNOWN;
             }
         }

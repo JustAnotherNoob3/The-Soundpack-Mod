@@ -15,7 +15,7 @@ namespace OtherStuff{
         static public void Prefix(ChatLogMessage message){
             if(message.chatLogEntry.type == ChatType.GAME_MESSAGE){
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)message.chatLogEntry;
-                if(entry.messageId.ToString().Contains("HAS_EMERGED")) {PlayMusicPatch.moddedMusic="";SoundpackUtils.horsemen++; Debug.LogError("Horsemen Alive: "+SoundpackUtils.horsemen); SoundpackUtils.loop = false;}
+                if(entry.messageId.ToString().Contains("HAS_EMERGED")) {PlayMusicPatch.moddedMusic="";SoundpackUtils.horsemen++; SoundpackUtils.loop = false;}
                 if(entry.messageId == GameFeedbackMessage.RAPID_MODE_STARTING) SoundpackUtils.isRapid = true;
             }
         }
@@ -23,13 +23,10 @@ namespace OtherStuff{
     [HarmonyPatch(typeof(HudGraveyardPanel), "CreateItem")]
     class HorsemenDiedCheck{
         static public void Prefix(KillRecord killRecord){
-            Debug.LogError("Someone died");
             SoundpackUtils.prosecutor = false;
             if(killRecord.playerRole == Role.FAMINE || killRecord.playerRole == Role.WAR || killRecord.playerRole == Role.PESTILENCE || killRecord.playerRole == Role.DEATH){
-                Debug.LogError("Apocalypse died");
                 SoundpackUtils.horsemen--;
                 SoundpackUtils.horsemen--;
-                Debug.LogError("Count: "+SoundpackUtils.horsemen);
             }
         }
     }

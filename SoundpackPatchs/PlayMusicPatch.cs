@@ -29,7 +29,6 @@ namespace SoundpackPatchs
             //* nevermind it does, dont check shit.
             if (__instance.IsMusicPlaying(sound) || (moddedMusic == modSound && Pepper.IsGamePhasePlay()))
             {
-                Debug.Log($"{modSound} is already playing.");
                 return false;
             }
             __instance.StopAllCoroutines();
@@ -79,7 +78,6 @@ namespace SoundpackPatchs
                 }
                 else
                 {
-                    Debug.LogError("Error al cargar archivo de audio: " + www.error);
                     OnMusicAudioClipLoaded(null, instance, audioTrack, sound);
                 }
             }

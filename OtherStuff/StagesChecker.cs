@@ -30,7 +30,6 @@ namespace OtherStuff{
     [HarmonyPatch(typeof(FactionWinsCinematicPlayer), "Init")]
     class EndGame {
         public static void Prefix(ICinematicData cinematicData){
-            Debug.Log(((FactionWinsCinematicData)cinematicData).winningFaction);
             SoundpackUtils.isRapid = false;
             SoundpackUtils.loop = false;
             if(((FactionWinsCinematicData)cinematicData).winningFaction == FactionType.NONE){

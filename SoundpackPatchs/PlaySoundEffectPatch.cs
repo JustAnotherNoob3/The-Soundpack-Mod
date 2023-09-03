@@ -37,7 +37,6 @@ namespace SoundpackPatchs{
     }
     else
     {
-        Debug.LogError("Error al cargar archivo de audio: " + www.error);
         OnSoundEffectAudioClipLoaded(null, randomizePitch, minPitch, maxPitch,  instance);
     }
     }
