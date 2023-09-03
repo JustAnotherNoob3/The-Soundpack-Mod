@@ -10,6 +10,8 @@ namespace OtherStuff{
     [HarmonyPatch(typeof(Game.Interface.PickNamesPanel), "Start")]
     class InitGame{
         static public void Prefix(){
+            Debug.LogError("heheheha");
+            //! IF SOMEONE REPORTS THE RAPID STUFF FOLLOWING OTHER GAME BE SURE TO MAKE LOOP FALSE
             SoundpackUtils.horsemen = 0;
             SoundpackUtils.dayOne = true;
             SoundpackUtils.targetOnStand = false;
@@ -19,18 +21,10 @@ namespace OtherStuff{
             if(ModSettings.GetBool("Randomize Soundpacks") && SoundpackUtils.directories.Count > 0){
                 System.Random r = new();
                 ModSettings.SetString("Selected Soundpack", SoundpackUtils.directories[r.Next(SoundpackUtils.directories.Count)]);
+                Debug.Log(ModSettings.GetString("Selected Soundpack"));
                 AudioController a = Object.FindObjectOfType<AudioController>();
                 a.StopMusic();
                 a.PlayMusic("Audio/Music/SelectionMusic");
-            }
-            if(ModSettings.GetBool("Deactivate Custom Triggers")) return;
-            List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
-            if(modifiers.Contains(Role.FAST_MODE)){
-                SoundpackUtils.gameVelocity = "FastMode";
-            } else if(modifiers.Contains(Role.SLOW_MODE)){
-                SoundpackUtils.gameVelocity = "SlowMode";
-            } else {
-                SoundpackUtils.gameVelocity = "";
             }
         }
     }

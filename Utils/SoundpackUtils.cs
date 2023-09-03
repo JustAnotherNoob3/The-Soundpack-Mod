@@ -14,6 +14,7 @@ namespace Utils
         public static bool loop = false;
         public static bool isRapid = false;
         public static string gameVelocity = "";
+        public static string loopString = "";
         public static bool targetOnStand = false; // when you are exe.
         public static bool playerOnStand = false; //when you have been voted.
         public static bool prosecutor = false; //if a prosecutor is prosecuting someone.
@@ -24,158 +25,230 @@ namespace Utils
         public static string GetCustomSound(string ogSoundPath)
         {
             string[] ogSoundPathNames = ogSoundPath.Split('/');
-            if (ogSoundPathNames[1] != "Music" && ogSoundPathNames[1] != "Sfx" && ModSettings.GetBool("Only Allow Custom Music"))
+            if (ogSoundPathNames[1] != "Music" && ogSoundPathNames[2] != "cinematicsfx" && ModSettings.GetBool("Only Allow Custom Music"))
                 return ogSoundPath;
-                Debug.Log(directoryPath);
-                Debug.Log(ogSoundPath);
-                Debug.Log(ModSettings.GetString("Selected Soundpack"));
-            if (Pepper.IsGamePhasePlay() && !ModSettings.GetBool("Deactivate Custom Triggers"))
+            if (!ModSettings.GetBool("Deactivate Custom Triggers"))
             {
-                if (Pepper.GetMyRole() == Role.EXECUTIONER) Debug.LogError("I am executioner. My target is: " + Service.Game.Sim.info.executionerTargetObservation.Data.targetPosition);
-                Debug.Log(directoryPath);
-                Debug.Log(ogSoundPath);
-                Debug.Log(ModSettings.GetString("Selected Soundpack"));
-                string roleFolderName = RoleExtensions.ToDisplayString(Pepper.GetMyRole());
-                Debug.Log(roleFolderName);
-                if (dayOne && ogSoundPathNames[2] == "DiscussionMusic")
+                if (Pepper.IsGamePhasePlay()) 
                 {
-                    Debug.LogWarning("It is day one");
-                    dayOne = false;
-                    string pathToFirstDay = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName, "Music", "DayOne");
-                    string customSoundPath = FindCustomSound(pathToFirstDay);
-                    if (!string.IsNullOrEmpty(customSoundPath))
-                        return customSoundPath;
-                    pathToFirstDay = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Music", "DayOne");
-                    customSoundPath = FindCustomSound(pathToFirstDay);
-                    if (!string.IsNullOrEmpty(customSoundPath))
-                        return customSoundPath;
-                    Debug.Log(pathToFirstDay + " was not found.");
-                }
-                else
-                {
-                    Debug.LogWarning("not day 1");
-                }
-                if (ogSoundPathNames[2] == "Judgement")
-                {
-                    if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
+                    if(loop){ //needs test
+                        return loopString;
+                    }
+                    RoleData roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
+                    string roleFolderName = roleData.roleName;
+                    Debug.Log(roleFolderName);
+                    if (dayOne && ogSoundPathNames[2] == "DiscussionMusic")
                     {
-                        if (prosecutor)
-                        {
-                            string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2] + "Prosecutor");
-                            string customSoundPath = FindCustomSound(pathToTargetPros);
-                            if (!string.IsNullOrEmpty(customSoundPath))
-                                return customSoundPath;
+                        List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
+                        foreach (Role modifier in modifiers){
+                            Debug.LogError(modifier);
                         }
-                        string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2]);
-                        string customTargetSoundPath = FindCustomSound(pathToTarget);
-                        if (!string.IsNullOrEmpty(customTargetSoundPath))
-                            return customTargetSoundPath;
+                        if (modifiers.Contains(Role.FAST_MODE))
+                        {
+                            Debug.LogError("it is fast mode");
+                            gameVelocity = "FastMode";
+                        }
+                        else if (modifiers.Contains(Role.SLOW_MODE))
+                        {
+                            Debug.LogError("it is slow mode");
+                            gameVelocity = "SlowMode";
+                        }
+                        else
+                        {
+                            Debug.LogError("no modifier");
+                            gameVelocity = "";
+                        }
+                        Debug.LogWarning("It is day one");
+                        dayOne = false;
+                        string pathToFirstDay = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName, "Music", "DayOne");
+                        string customSoundPath = FindCustomSound(pathToFirstDay);
+                        if (!string.IsNullOrEmpty(customSoundPath))
+                            return customSoundPath;
+                        pathToFirstDay = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Music", "DayOne");
+                        customSoundPath = FindCustomSound(pathToFirstDay);
+                        if (!string.IsNullOrEmpty(customSoundPath))
+                            return customSoundPath;
+                        Debug.Log(pathToFirstDay + " was not found.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("not day 1");
+                    }
+                    if (ogSoundPathNames[2] == "Judgement")
+                    {
+                        if (prosecutor) //test
+                        {
+                            if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand){
+                                string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2] + "Prosecutor");
+                                string customSoundPath = FindCustomSound(pathToTargetPros);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                            } else if (playerOnStand){
+                                if (horsemen > 0)
+                                {
+                                string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                string customHorsemenSoundPath = FindCustomSound(pathToHorsemen);
+                                if (!string.IsNullOrEmpty(customHorsemenSoundPath))
+                                    return customHorsemenSoundPath;
+                                }
+                                string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                string customSoundPath = FindCustomSound(pathToTargetPros);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                                pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                customSoundPath = FindCustomSound(pathToTargetPros);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                            }
+                            if (horsemen > 0)
+                            {
+                                string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                string customSoundPath = FindCustomSound(pathToHorsemen);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                            }
+                            string pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                            string customProsSoundPath = FindCustomSound(pathToPros);
+                            if (!string.IsNullOrEmpty(customProsSoundPath))
+                                return customProsSoundPath;
+                            pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                            customProsSoundPath = FindCustomSound(pathToPros);
+                            if (!string.IsNullOrEmpty(customProsSoundPath))
+                                return customProsSoundPath;
+                        }
+                        if (Pepper.GetMyRole() == Role.EXECUTIONER) Debug.LogError("I am executioner. My target is: " + Service.Game.Sim.info.executionerTargetObservation.Data.targetPosition);
+                        if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
+                        {
+                            //test
+                            string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2]);
+                            string customTargetSoundPath = FindCustomSound(pathToTarget);
+                            if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                return customTargetSoundPath;
 
-                    }
-                    else if (playerOnStand)
-                    {
-                        if (prosecutor)
-                        {
-                            string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
-                            string customSoundPath = FindCustomSound(pathToTargetPros);
-                            if (!string.IsNullOrEmpty(customSoundPath))
-                                return customSoundPath;
-                            pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
-                            customSoundPath = FindCustomSound(pathToTargetPros);
-                            if (!string.IsNullOrEmpty(customSoundPath))
-                                return customSoundPath;
                         }
-                        string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                        string customTargetSoundPath = FindCustomSound(pathToTarget);
-                        if (!string.IsNullOrEmpty(customTargetSoundPath))
-                            return customTargetSoundPath;
-                        pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                        customTargetSoundPath = FindCustomSound(pathToTarget);
-                        if (!string.IsNullOrEmpty(customTargetSoundPath))
-                            return customTargetSoundPath;
-                    }
-                    if (prosecutor)
-                    {
+                        else if (playerOnStand)
+                        {
+                            
+                            //test
+                            if (horsemen > 0)
+                            {
+                                string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], "Player"+ogSoundPathNames[2]);
+                                string customSoundPath = FindCustomSound(pathToHorsemen);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                            }
+                            string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                            string customTargetSoundPath = FindCustomSound(pathToTarget);
+                            if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                return customTargetSoundPath;
+                            pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                            customTargetSoundPath = FindCustomSound(pathToTarget);
+                            if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                return customTargetSoundPath;
+                        }
+                        
                         if (horsemen > 0)
                         {
-                            string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], ogSoundPathNames[2]+"Prosecutor"); 
+                            string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen"));
                             string customSoundPath = FindCustomSound(pathToHorsemen);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
                         }
-                        string pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], ogSoundPathNames[2]+"Prosecutor"); 
-                        string customProsSoundPath = FindCustomSound(pathToPros);
-                        if (!string.IsNullOrEmpty(customProsSoundPath))
-                            return customProsSoundPath;
-                        pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], ogSoundPathNames[2]+"Prosecutor"); 
-                        customProsSoundPath = FindCustomSound(pathToPros);
-                        if (!string.IsNullOrEmpty(customProsSoundPath))
-                            return customProsSoundPath;
+                        string pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName));
+                        string SoundPath = FindCustomSound(pathToSound);
+                        if (!string.IsNullOrEmpty(SoundPath))
+                            return SoundPath;
+                        pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack")));
+                        SoundPath = FindCustomSound(pathToSound);
+                        if (!string.IsNullOrEmpty(SoundPath))
+                            return SoundPath;
+                    }
+                    if (isRapid)
+                    {
+                        if (ModSettings.GetBool("Looping Rapid Mode") && ogSoundPathNames[1] == "Music") //needs test
+                        {
+                            if (horsemen > 0)
+                            {
+                                string pathToHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], "RapidModeLooping");
+                                string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
+                                if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
+                                {
+                                    loop = true;
+                                    loopString = customHorsemenVelocitySoundsPath;
+                                    return customHorsemenVelocitySoundsPath;
+                                    
+                                }
+                            }
+                            string pathToCustomRapidSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "RapidModeLooping");
+                            string customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                            if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                            {
+                                loop = true;
+                                loopString = customRapidSoundsPath;
+                                return customRapidSoundsPath;
+                            }
+                            pathToCustomRapidSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "RapidModeLooping");
+                            customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                            if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                            {
+                                loop = true;
+                                loopString = customRapidSoundsPath;
+                                return customRapidSoundsPath;
+                            }
+                        }
+
+                        if (horsemen > 0)
+                        {
+                            string pathToHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                            string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
+                            if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
+                            {
+                                return customHorsemenVelocitySoundsPath;
+                            }
+                        }
+                        string pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                        string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                        pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                        customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                    }
+                    else if (!string.IsNullOrEmpty(gameVelocity)) { 
+                        if (horsemen > 0)
+                        {
+                            string pathToHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                            string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
+                            if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
+                            {
+                                return customHorsemenVelocitySoundsPath;
+                            }
+                        }
+                        string pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                        string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                        pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                        customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
                     }
                     if (horsemen > 0)
                     {
-                        string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")); 
+
+                        string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen"));
                         string customSoundPath = FindCustomSound(pathToHorsemen);
                         if (!string.IsNullOrEmpty(customSoundPath))
                             return customSoundPath;
                     }
-                    string pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"),roleFolderName)); 
-                    string SoundPath = FindCustomSound(pathToSound);
-                    if (!string.IsNullOrEmpty(SoundPath))
-                        return SoundPath;
-                    pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))); 
-                    SoundPath = FindCustomSound(pathToSound);
-                    if (!string.IsNullOrEmpty(SoundPath))
-                        return SoundPath;
+                    string pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName));
+                    string customRoleSoundPath = FindCustomSound(pathToRoleSounds);
+                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
                 }
-                if (horsemen > 0)
+                if (draw && ogSoundPathNames[2] == "CovenVictory") //test
                 {
-                    string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Horsemen")); 
-                    string customSoundPath = FindCustomSound(pathToHorsemen);
-                    if (!string.IsNullOrEmpty(customSoundPath))
-                        return customSoundPath;
+                    draw = false;
+                    string pathToCustomDrawMusic = Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Music", "DrawMusic");
+                    string customDrawMusicPath = FindCustomSound(pathToCustomDrawMusic);
+                    if (!string.IsNullOrEmpty(customDrawMusicPath)) return customDrawMusicPath;
                 }
-                if (isRapid)
-                {
-                    if (ModSettings.GetBool("Looping Rapid Mode"))
-                    {
-                        loop = true;
-                    }
-                    else
-                    {
-                        string pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
-                        string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                         pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
-                         customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                    }
-                }
-                else if (!string.IsNullOrEmpty(gameVelocity)) { }
-                else
-                {
-                    string pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
-                    string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-                    if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                     pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"))).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
-                     customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-                    if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                }
-                string pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), roleFolderName));
-                string customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-                if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-            }
-            else if (draw)
-            {
-                draw = false;
-                string pathToCustomDrawMusic = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack"), "Music", "DrawCinematic"));
-                string customDrawMusicPath = FindCustomSound(pathToCustomDrawMusic);
-                if (!string.IsNullOrEmpty(customDrawMusicPath)) return customDrawMusicPath;
-            }
-            else
-            {
-
-                Debug.LogWarning("Not in-game");
             }
 
             string pathToCustomSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, ModSettings.GetString("Selected Soundpack")));
@@ -184,13 +257,18 @@ namespace Utils
         }
         static string FindCustomSound(string soundPath) //are you happy now curtis?
         {
-            if (!string.IsNullOrEmpty(soundPath)) return null;
-            string[] extensions = { ".wav", ".mp3", ".ogg", ".aiff", ".mod" };
+            if (string.IsNullOrEmpty(soundPath)) return null;
+            string[] extensions = { ".ogg", ".wav", ".mp3" };
             foreach (string extension in extensions)
             {
                 string fullPath = soundPath + extension;
+                Debug.LogError("Trying " + fullPath);
                 if (File.Exists(fullPath))
+                {
+                    Debug.LogError(fullPath + " found!");
                     return fullPath;
+                }
+
             }
             return null;
         }
@@ -199,15 +277,18 @@ namespace Utils
         {
 
             directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+            Debug.Log(directoryPath);
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
+            Debug.Log("Working?");
             string[] fullDirectories = Directory.GetDirectories(directoryPath);
+            Debug.Log(fullDirectories);
             foreach (string dir in fullDirectories)
             {
-                string[] dirs = dir.Split('/');
-                directories.Add(dirs[dirs.Length]);
+                Debug.Log(Path.GetFileName(dir));
+                directories.Add(Path.GetFileName(dir));
             }
         }
         public static void OpenSoundpackDirectory()
@@ -231,10 +312,6 @@ namespace Utils
                     return AudioType.MPEG;
                 case ".ogg":
                     return AudioType.OGGVORBIS;
-                case ".aiff":
-                    return AudioType.AIFF;
-                case ".mod":
-                    return AudioType.MOD;
                 default:
                     Debug.LogWarning("AudioUtility: La extensión de archivo " + extension + " no es compatible.");
                     return AudioType.UNKNOWN;

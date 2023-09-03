@@ -7,11 +7,14 @@ using UnityEngine.Networking;
 using UnityEngine;
 using Utils;
 namespace SoundpackPatchs{
-    [HarmonyPatch(typeof(AudioController), "PlaySoundEffect")]
+    [HarmonyPatch(typeof(AudioController), "StopMusic")]
     public class StopMusicPatch{        
         
         public static bool Prefix(){
-            if(SoundpackUtils.loop) return false; else return true;
+            
+            if(SoundpackUtils.loop) return false;
+            PlayMusicPatch.moddedMusic = "";
+            return true;
         }
 		
 }

@@ -12,8 +12,8 @@ namespace Main
     {
         public static void Start()
             {
-            Debug.Log("Working?");
-            SoundpackUtils.ForSoundpackMod();     
+            Debug.Log("Working?"); 
+            SoundpackUtils.ForSoundpackMod();   
             }
         
     }
@@ -24,11 +24,9 @@ public class MenuItem
    {
       Label = "Soundpacks",
       Icon = FromResources.LoadSprite("TheSoundpackMod.resources.images.MusicButton.png"),
-      OnClick = () =>
-      {
-         SoundpackUtils.OpenSoundpackDirectory();
-      }
+      OnClick = SoundpackUtils.OpenSoundpackDirectory
    };
 }
-
 }
+
+

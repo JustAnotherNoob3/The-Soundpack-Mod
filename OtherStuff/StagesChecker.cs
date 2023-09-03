@@ -7,25 +7,36 @@ using UnityEngine;
 using Server.Shared.Messages;
 using Server.Shared.State.Chat;
 using Server.Shared.State;
+using Server.Shared.Cinematics.Data;
+using Services;
 
 namespace OtherStuff{
     [HarmonyPatch(typeof(ProsecutionCinematicPlayer), "Init")]
     class ProsecutionCinematicPlayer_Init_Patch{
         public static void Prefix(){
-            SoundpackUtils.prosecutor = true;
+            AudioController a = Object.FindObjectOfType<AudioController>();
+                a.StopMusic("Audio/Music/Judgement");
+                
         }
     }
-    [HarmonyPatch(typeof(ChatAvailableStagesObservation), "StartTrialAsDefendant")]
-    class Trial{
+    [HarmonyPatch(typeof(ProsecutionCinematicPlayer), "Cleanup")]
+    class ProsecutionCinematicPlayer_Cleanup_Patch{
         public static void Prefix(){
-            SoundpackUtils.playerOnStand = true;
+            AudioController a = Object.FindObjectOfType<AudioController>();
+            a.PlayMusic("Audio/Music/Judgement");
         }
     }
-    [HarmonyPatch(typeof(Game.Interface.HudEndGame), "HandleGameResults")]
+    
+    [HarmonyPatch(typeof(FactionWinsCinematicPlayer), "Init")]
     class EndGame {
-        public static void Prefix(GameResults results){
-            SoundpackUtils.draw = results.winType == WinType.DRAW;
+        public static void Prefix(ICinematicData cinematicData){
+            Debug.Log(((FactionWinsCinematicData)cinematicData).winningFaction);
+            SoundpackUtils.isRapid = false;
             SoundpackUtils.loop = false;
+            if(((FactionWinsCinematicData)cinematicData).winningFaction == FactionType.NONE){
+                SoundpackUtils.draw = true;
+            }
+            
         }
     }
 }
