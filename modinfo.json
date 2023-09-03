@@ -21,8 +21,8 @@
     "CheckboxSettings": [
       {
         "Name": "Only Allow Custom Music",
-        "Description": "Only the music will be customized, sounds will be base game's.",
-        "DefaultValue": false,
+        "Description": "Only the music will be customized, sounds will be base game's. WARNING: turning this off may cause a lot of lag spikes, you'll need a really high-end pc to not lag from these.",
+        "DefaultValue": true,
         "AvailableInGame": false
       },
       {
