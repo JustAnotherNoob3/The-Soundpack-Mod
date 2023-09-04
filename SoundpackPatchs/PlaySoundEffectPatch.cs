@@ -27,7 +27,7 @@ namespace SoundpackPatchs{
 		public static IEnumerator LoadSoundEffectAudioFile(string path, bool randomizePitch, float minPitch, float maxPitch,  AudioController instance)
     {
         string extension = path.Substring(path.LastIndexOf('.'));
-    using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(path, SoundpackUtils.GetAudioType(extension)))
+    using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://"+path, SoundpackUtils.GetAudioType(extension)))
     {
         yield return www.SendWebRequest();
         if (www.result == UnityWebRequest.Result.Success)

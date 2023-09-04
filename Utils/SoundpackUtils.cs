@@ -274,7 +274,12 @@ namespace Utils
         public static void OpenSoundpackDirectory()
         {
             string text = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-            Application.OpenURL("file://" + text);
+            if(Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix){
+                System.Diagnostics.Process.Start("open", "\"" + text + "\""); //code stolen from tuba
+            }else {
+                Application.OpenURL("file://" + text);
+            }
+            
         }
 
 
