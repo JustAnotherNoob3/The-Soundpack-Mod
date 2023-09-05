@@ -1,6 +1,7 @@
 using System.IO;
 using UnityEngine;
 using Server.Shared.State;
+using System;
 using Services;
 using SML;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace Utils
         public static string GetCustomSound(string ogSoundPath)
         {
             string[] ogSoundPathNames = ogSoundPath.Split('/');
-            if (ogSoundPathNames[1] != "Music" && ogSoundPathNames[2] != "cinematicsfx" && ModSettings.GetBool("Only Allow Custom Music"))
+            if (ogSoundPathNames[1] != "Music" && ogSoundPathNames[2] != "CinematicSFX" && ModSettings.GetBool("Only Allow Custom Music"))
                 return ogSoundPath;
             if (!ModSettings.GetBool("Deactivate Custom Triggers"))
             {
