@@ -8,6 +8,8 @@ using Server.Shared.State;
 using Game.Simulation;
 using UnityEngine;
 using SoundpackPatchs;
+using Server.Shared.Extensions;
+using System;
 
 namespace OtherStuff{
     [HarmonyPatch(typeof(Game.Chat.PooledChatController), "AddMessage")]
@@ -15,7 +17,8 @@ namespace OtherStuff{
         static public void Prefix(ChatLogMessage message){
             if(message.chatLogEntry.type == ChatType.GAME_MESSAGE){
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)message.chatLogEntry;
-                if(entry.messageId.ToString().Contains("HAS_EMERGED")) {PlayMusicPatch.moddedMusic="";SoundpackUtils.horsemen++; SoundpackUtils.loop = false;}
+                string msg = entry.messageId.ToString();
+                if(msg.Contains("HAS_EMERGED")) {PlayMusicPatch.moddedMusic=""; SoundpackUtils.horsemen.Add((Role)Enum.Parse(typeof(Role),msg.Split('_')[0])); SoundpackUtils.loop = false;}
                 if(entry.messageId == GameFeedbackMessage.RAPID_MODE_STARTING) SoundpackUtils.isRapid = true;
             }
         }
@@ -25,8 +28,7 @@ namespace OtherStuff{
         static public void Prefix(KillRecord killRecord){
             SoundpackUtils.prosecutor = false;
             if(killRecord.playerRole == Role.FAMINE || killRecord.playerRole == Role.WAR || killRecord.playerRole == Role.PESTILENCE || killRecord.playerRole == Role.DEATH){
-                SoundpackUtils.horsemen--;
-                SoundpackUtils.horsemen--;
+                SoundpackUtils.horsemen.DeleteAll(killRecord.playerRole);
             }
         }
     }
@@ -36,7 +38,7 @@ namespace OtherStuff{
             SoundpackUtils.isRapid = false;
             if(SoundpackUtils.loop){
                 SoundpackUtils.loop = false;
-                AudioController a = Object.FindObjectOfType<AudioController>();
+                AudioController a = UnityEngine.Object.FindObjectOfType<AudioController>();
                 a.StopMusic();
                 a.PlayMusic("Audio/Music/WDAH");
             }

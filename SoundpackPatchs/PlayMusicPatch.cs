@@ -8,6 +8,7 @@ using Utils;
 using Home.Shared;
 using UnityEngine;
 using Services;
+using System;
 
 namespace SoundpackPatchs
 {
@@ -78,6 +79,7 @@ namespace SoundpackPatchs
                 }
                 else
                 {
+                    Console.WriteLine("Error al cargar archivo de audio: " + www.error);
                     OnMusicAudioClipLoaded(null, instance, audioTrack, sound);
                 }
             }

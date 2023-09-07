@@ -2,13 +2,10 @@ using Utils;
 using HarmonyLib;
 using SML;
 using Cinematics.Players;
-using Server.Shared.Info;
 using UnityEngine;
-using Server.Shared.Messages;
-using Server.Shared.State.Chat;
 using Server.Shared.State;
 using Server.Shared.Cinematics.Data;
-using Services;
+using Server.Shared.Extensions;
 
 namespace OtherStuff{
     [HarmonyPatch(typeof(ProsecutionCinematicPlayer), "Init")]
@@ -36,6 +33,15 @@ namespace OtherStuff{
                 SoundpackUtils.draw = true;
             }
             
+        }
+    }
+    [HarmonyPatch(typeof(WrapupCinematicPlayer), "Init")]
+    class WrapupCinematicPlayer_Init_Patch {
+        public static void Prefix(ICinematicData a_cinematicData){
+            SoundpackUtils.win = ((WrapUpCinematicData)a_cinematicData).didWin.GetElement(Pepper.GetMyPosition());
+            AudioController a = Object.FindObjectOfType<AudioController>();
+                a.StopMusic();
+                a.PlayMusic("Audio/Music/LoginMusicLoop_old");
         }
     }
 }

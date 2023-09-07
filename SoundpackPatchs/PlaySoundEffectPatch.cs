@@ -1,6 +1,6 @@
 using HarmonyLib;
 using Home.Shared;
-
+using SML;
 using System;
 using System.Collections;
 using UnityEngine.Networking;
@@ -12,6 +12,9 @@ namespace SoundpackPatchs{
     public class PlaySoundEffectPatch{        
         
         public static bool Prefix(AudioController __instance, string sound, bool randomizePitch, float minPitch, float maxPitch){
+            if(ModSettings.GetBool("Deactivate Custom SFX")){
+                return true;
+            }
             string modSound = SoundpackUtils.GetCustomSound(sound);
             if(sound == modSound)
             {
@@ -37,6 +40,7 @@ namespace SoundpackPatchs{
     }
     else
     {
+        Console.WriteLine("Error al cargar archivo de audio: " + www.error);
         OnSoundEffectAudioClipLoaded(null, randomizePitch, minPitch, maxPitch,  instance);
     }
     }

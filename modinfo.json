@@ -5,7 +5,7 @@
     "JAN"
   ],
   "Description": "This mod allows for the customization of all music and sounds of the game. Join <color=blue>https://discord.gg/ht8ttc3R8E</color> for a explanation on how soundpacks work.",
-  "Version": "1.1.0",
+  "Version": "1.2.0",
   "RequiredMods": [],
   "Settings": {
     "TextInputSettings": [
@@ -19,12 +19,7 @@
       }
     ],
     "CheckboxSettings": [
-      {
-        "Name": "Only Allow Custom Music",
-        "Description": "Only the music will be customized, sounds will be base game's. WARNING: turning this off may cause a lot of lag spikes, you'll need a really high-end pc to not lag from these.",
-        "DefaultValue": true,
-        "AvailableInGame": false
-      },
+      
       {
         "Name": "Randomize Soundpacks",
         "Description": "At the start of a game, the selected soundpack will be randomized. This will change the Selected Soundpack text input box too to the one chosen at random.",
@@ -38,8 +33,20 @@
         "AvailableInGame": false
       },
       {
+        "Name": "Deactivate Custom SFX",
+        "Description": "Only the music will be customized, sounds will be base game's. If you get lag spikes because of the mod, try turning this on.",
+        "DefaultValue": false,
+        "AvailableInGame": false
+      },
+      {
         "Name": "Deactivate Custom Triggers",
         "Description": "Disables soundpacks to have specific music when a specific trigger in-game happens(such as being a role, day 1, etc)",
+        "DefaultValue": false,
+        "AvailableInGame": false
+      },
+      {
+        "Name": "Allow Custom Triggers SFX",
+        "Description": "Soundpacks are able to modify steps and UI sounds when a folder trigger occurs. <color=yellow>WARNING: this WILL cause major lag spikes if your pc is not high-end.</color>",
         "DefaultValue": false,
         "AvailableInGame": false
       }
