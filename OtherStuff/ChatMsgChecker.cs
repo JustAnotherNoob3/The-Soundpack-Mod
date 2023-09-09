@@ -29,8 +29,8 @@ namespace OtherStuff{
             SoundpackUtils.prosecutor = false;
             if(killRecord.playerRole == Role.FAMINE || killRecord.playerRole == Role.WAR || killRecord.playerRole == Role.PESTILENCE || killRecord.playerRole == Role.DEATH){
                 SoundpackUtils.horsemen.DeleteAll(killRecord.playerRole);
-            }
         }
+    }
     }
     [HarmonyPatch(typeof(WhoDiedAndHowPanel), "HandleSubphaseWhoDied")]
     class LoopCheck{

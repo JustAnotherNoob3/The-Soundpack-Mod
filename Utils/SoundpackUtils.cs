@@ -51,20 +51,16 @@ namespace Utils
                             List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
                             if (modifiers.Contains(Role.FAST_MODE))
                             {
-                                
                                 gameVelocity = "FastMode";
                             }
                             else if (modifiers.Contains(Role.SLOW_MODE))
                             {
-                                
                                 gameVelocity = "SlowMode";
                             }
                             else
                             {
-                                
                                 gameVelocity = "";
                             }
-                            
                             dayOne = false;
                             string pathToFirstDay = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "DayOne");
                             string customSoundPath = FindCustomSound(pathToFirstDay);
@@ -74,7 +70,6 @@ namespace Utils
                             customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
-                            
                         }
 
                         if (ogSoundPathNames[2] == "Judgement")
@@ -305,11 +300,39 @@ namespace Utils
                     {
                         if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                         {
-                            string pathToMeHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName));
-                            string customMeHorsemenVelocitySoundsPath = FindCustomSound(pathToMeHorsemenVelocitySounds);
-                            if (!string.IsNullOrEmpty(customMeHorsemenVelocitySoundsPath))
+                            switch(roleData.role){
+                                case Role.SOULCOLLECTOR:
+                                string pathToMeDeathVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Death"));
+                            string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                            if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
                             {
-                                return customMeHorsemenVelocitySoundsPath;
+                                return customMeDeathVelocitySoundsPath;
+                            }
+                                break;
+                                case Role.BERSERKER:
+                                string pathToMeBersVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "War"));
+                            string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                            if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                            {
+                                return customMeBersVelocitySoundsPath;
+                            }
+                                break;
+                                case Role.PLAGUEBEARER:
+                                string pathToMePestVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Pestilence"));
+                            string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                            if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                            {
+                                return customMePestVelocitySoundsPath;
+                            }
+                                break;
+                                case Role.BAKER:
+                                string pathToMeFamVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Famine"));
+                            string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                            if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                            {
+                                return customMeFamVelocitySoundsPath;
+                            }
+                                break;
                             }
                         }
                         string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen"));
@@ -344,7 +367,6 @@ namespace Utils
                     }
                 }
             }
-
             string pathToCustomSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack));
             string customPath = FindCustomSound(pathToCustomSounds);
             if (!string.IsNullOrEmpty(customPath)) return customPath; else return ogSoundPath;
@@ -357,7 +379,6 @@ namespace Utils
             string[] files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
             if (files.Length < 1)
             {
-                
                 return null;
             }
             return files[0];
@@ -367,7 +388,6 @@ namespace Utils
         {
 
             directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-            
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
@@ -412,6 +432,7 @@ namespace Utils
                  case ".mod":
                 return AudioType.MOD;
                 default:
+                    Console.WriteLine("Soundpack Error! The extension is not supported.");
                     return AudioType.UNKNOWN;
             }
         }
