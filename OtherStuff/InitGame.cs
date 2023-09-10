@@ -17,9 +17,10 @@ namespace OtherStuff{
             SoundpackUtils.playerOnStand = false; 
             SoundpackUtils.prosecutor = false;
             SoundpackUtils.draw = false;
+            SoundpackUtils.isTT = false;
             if(ModSettings.GetBool("Randomize Soundpacks") && SoundpackUtils.directories.Count > 0){
                 System.Random r = new();
-                ModSettings.SetString("Selected Soundpack", SoundpackUtils.directories[r.Next(SoundpackUtils.directories.Count)]);
+                ModSettings.SetString("Selected Soundpack", SoundpackUtils.directories[r.Next(0, SoundpackUtils.directories.Count)]);
                 AudioController a = Object.FindObjectOfType<AudioController>();
                 a.StopMusic();
                 a.PlayMusic("Audio/Music/SelectionMusic");
