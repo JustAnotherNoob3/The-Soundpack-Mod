@@ -1,32 +1,53 @@
-﻿using HarmonyLib;
-using Utils;
+﻿using Utils;
 using SML;
 using System;
 using UnityEngine;
-using System.Reflection;
+using System.IO;
+using static SML.Mod;
 
-namespace Main
+namespace Main;
+
+[SalemMod]
+public class SoundPacks
 {
-    [Mod.SalemMod]
-    public class Main
+    public static string ModPath => Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+
+    public static void Start()
     {
-        public static void Start()
-            {
-            Debug.Log("Working?"); 
-            SoundpackUtils.ForSoundpackMod();   
-            }
-        
+        Debug.Log(ModPath);
+
+        if (!Directory.Exists(ModPath))
+            Directory.CreateDirectory(ModPath);
+
+        var fullDirectories = Directory.GetDirectories(ModPath);
+
+        foreach (var dir in fullDirectories)
+        {
+            Debug.Log(Path.GetFileName(dir));
+            SoundpackUtils.Directories.Add(Path.GetFileName(dir));
+        }
+
+        Console.WriteLine("Working?");
     }
-[Mod.SalemMenuItem]
+    
+}
+
+[SalemMenuItem]
 public class MenuItem
 {
    public static Mod.SalemMenuButton menuButtonName = new()
    {
       Label = "Soundpacks",
       Icon = FromResources.LoadSprite("TheSoundpackMod.resources.images.MusicButton.png"),
-      OnClick = SoundpackUtils.OpenSoundpackDirectory
+      OnClick = OpenSoundpackDirectory
    };
-}
-}
 
+    public static void OpenSoundpackDirectory()
+    {
+        if (Environment.OSVersion.Platform is PlatformID.MacOSX or PlatformID.Unix)
+            System.Diagnostics.Process.Start("open", $"\"{SoundPacks.ModPath}\""); //code stolen from tuba
+        else
+            Application.OpenURL($"file://{SoundPacks.ModPath}");
 
+    }
+}

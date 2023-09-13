@@ -11,15 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="modinfo.json" />
-    <None Remove="resources\images\thumbnail.png" />
-    <None Remove="resources\images\MusicButton.png" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="modinfo.json" />
-    <EmbeddedResource Include="resources\images\thumbnail.png" />
-    <EmbeddedResource Include="resources\images\MusicButton.png" />
+    <EmbeddedResource Include="Resources\*" />
   </ItemGroup>
 
   <ItemGroup>
