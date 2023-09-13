@@ -68,3 +68,4 @@ ___
 <p style="font-size:10px; margin-top: -2px;">Join <b>their</b> <a href="https://discord.gg/AdpRqzstfj">Discord server</a>!</p>
 
 [DjShinter](https://github.com/DjShinter) - Thumbnail, Small contributions.
+[AlchlcSystm](https://github.com/AlchlcDvl) - Formatting and minor improvements.
