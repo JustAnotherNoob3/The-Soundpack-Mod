@@ -38,7 +38,7 @@ public class MenuItem
    public static Mod.SalemMenuButton menuButtonName = new()
    {
       Label = "Soundpacks",
-      Icon = FromResources.LoadSprite("TheSoundpackMod.resources.images.MusicButton.png"),
+      Icon = FromResources.LoadSprite("TheSoundpackMod.Resources.MusicButton.png"),
       OnClick = OpenSoundpackDirectory
    };
 

@@ -1,6 +1,6 @@
 hello
 <p align="center">
- <img width="400px" src="https://raw.githubusercontent.com/JustAnotherNoob3/The-Soundpack-Mod/main/resources/images/thumbnail.png" align="center" alt="logo" />
+ <img width="400px" src="https://raw.githubusercontent.com/JustAnotherNoob3/The-Soundpack-Mod/main/Resources/Thumbnail.png" align="center" alt="logo" />
  <h2 align="center">The Soundpack Mod</h2>
  <p align="center">This mod allows for the customization of all music and sounds for the game.
 </p>
@@ -67,4 +67,5 @@ ___
 [Curtbot9000](https://github.com/Curtbot9000) - Made SalemModLoader.
 <p style="font-size:10px; margin-top: -2px;">Join <b>their</b> <a href="https://discord.gg/AdpRqzstfj">Discord server</a>!</p>
 
-[DjShinter](https://github.com/DjShinter) - Thumbnail, Small contributions.
+[DjShinter](https://github.com/DjShinter) - Thumbnail, Small contributions.\
+[AlchlcSystm](https://github.com/AlchlcDvl) - Formatting and minor improvements.
