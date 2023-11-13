@@ -1,53 +1,60 @@
-﻿using Utils;
+﻿using HarmonyLib;
+using Utils;
 using SML;
 using System;
 using UnityEngine;
-using System.IO;
-using static SML.Mod;
+using System.Reflection;
 
-namespace Main;
-
-[SalemMod]
-public class SoundPacks
+namespace Main
 {
-    public static string ModPath => Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-
-    public static void Start()
+    [Mod.SalemMod]
+    public class Main
     {
-        Debug.Log(ModPath);
-
-        if (!Directory.Exists(ModPath))
-            Directory.CreateDirectory(ModPath);
-
-        var fullDirectories = Directory.GetDirectories(ModPath);
-
-        foreach (var dir in fullDirectories)
-        {
-            Debug.Log(Path.GetFileName(dir));
-            SoundpackUtils.Directories.Add(Path.GetFileName(dir));
-        }
-
-        Console.WriteLine("Working?");
+        public static void Start()
+            {
+            Debug.Log("Working?"); 
+            SoundpackUtils.ForSoundpackMod();   
+            }
+        
     }
-    
-}
-
-[SalemMenuItem]
+[Mod.SalemMenuItem]
 public class MenuItem
 {
    public static Mod.SalemMenuButton menuButtonName = new()
    {
       Label = "Soundpacks",
-      Icon = FromResources.LoadSprite("TheSoundpackMod.Resources.MusicButton.png"),
-      OnClick = OpenSoundpackDirectory
+      Icon = FromResources.LoadSprite("TheSoundpackMod.resources.images.MusicButton.png"),
+      OnClick = SoundpackUtils.OpenSoundpackDirectory
    };
-
-    public static void OpenSoundpackDirectory()
-    {
-        if (Environment.OSVersion.Platform is PlatformID.MacOSX or PlatformID.Unix)
-            System.Diagnostics.Process.Start("open", $"\"{SoundPacks.ModPath}\""); //code stolen from tuba
-        else
-            Application.OpenURL($"file://{SoundPacks.ModPath}");
-
+}
+[DynamicSettings]
+public class Settings {
+    public ModSettings.DropdownSetting SelectedSoundpack{
+        get{
+            ModSettings.DropdownSetting SelectedSoundpack = new(){
+                Name = "Selected Soundpack",
+                Description = "The soundpack you are going to listen to.",
+                Options = SoundpackUtils.GetSoundpacks(),
+                AvailableInGame = true,
+                Available = true,
+                OnChanged = (s) => SoundpackUtils.LoadSoundpack(s)
+            };
+            return SelectedSoundpack;
+        }
+    }
+    public ModSettings.DropdownSetting SelectedSubFolder{
+        get{
+            ModSettings.DropdownSetting SelectedSubFolder = new(){
+                Name = "Subfolder to randomize",
+                Description = "The mod will only randomize soundpacks inside this folder.",
+                Options = SoundpackUtils.GetSubfolders(),
+                AvailableInGame = false,
+                Available = true
+            };
+            return SelectedSubFolder;
+        }
     }
 }
+}
+
+

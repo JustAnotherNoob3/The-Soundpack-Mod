@@ -1,24 +1,15 @@
 {
   "HarmonyId": "JAN.soundpacks",
   "DisplayName": "The Soundpack Mod",
-  "Authors": [ "JAN" ],
+  "Authors": [
+    "JustAnotherNoob"
+  ],
   "Description": "This mod allows for the customization of all music and sounds of the game. Join <color=blue>https://discord.gg/ht8ttc3R8E</color> for a explanation on how soundpacks work.",
-  "Version": "1.2.6",
-  "Settings":
-  {
-    "TextInputSettings":
-    [
-      {
-        "Name": "Selected Soundpack",
-        "Description": "The soundpack you are going to listen to.",
-        "DefaultValue": "No Soundpack Selected",
-        "Regex": "[0-9A-Za-z]",
-        "CharacterLimit": 30,
-        "AvailableInGame": false
-      }
-    ],
-    "CheckboxSettings":
-    [  
+  "Version": "1.3.0",
+  "RequiredMods": [],
+  "Settings": {
+    "CheckboxSettings": [
+      
       {
         "Name": "Randomize Soundpacks",
         "Description": "At the start of a game, the selected soundpack will be randomized. This will change the Selected Soundpack text input box too to the one chosen at random.",

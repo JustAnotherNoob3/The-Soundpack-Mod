@@ -2,8 +2,12 @@
     "dotnet.defaultSolution": "SoundpackModTheSequel.sln",
     "cSpell.words": [
         "archivo",
+        "Bers",
         "extensión",
-        "OGGVORBIS"
+        "OGGVORBIS",
+        "PLAGUEBEARER",
+        "SOULCOLLECTOR",
+        "Subfolders"
     ],
     "cSpell.ignoreWords": [
         "cinematicsfx"

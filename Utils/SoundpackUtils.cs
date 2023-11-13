@@ -1,3 +1,4 @@
+using System.Net;
 using System.IO;
 using UnityEngine;
 using Server.Shared.State;
@@ -5,773 +6,856 @@ using Services;
 using SML;
 using System.Collections.Generic;
 using Server.Shared.Extensions;
-using Main;
-
-namespace Utils;
-
-public class SoundpackUtils
+using System;
+using System.Net.Sockets;
+using System.Linq;
+// ! things left to do: add text saying what randomized soundpack is with the text "You are now hearing: X". add subalignment and alignment stuff. TEST TT. test everything tbh
+namespace Utils
 {
-    public static bool Draw = false;
-    public static bool Win = false;
-    public static bool Loop = false;
-    public static bool IsRapid = false;
-    public static bool IsTT = false;
-    public static string GameVelocity = "";
-    private static string loopString = "";
-    public static bool TargetOnStand = false; // when you are exe.
-    public static bool PlayerOnStand = false; //when you have been voted.
-    public static bool Prosecutor = false; //if a Prosecutor is prosecuting someone.
-    public static List<Role> Horsemen = new();
-    public static bool DayOne = false; // if it is day one.
-    public static List<string> Directories = new();
-
-    public static string GetCustomSound(string ogSoundPath)
+    public class SoundpackUtils
     {
-        var ogSoundPathNames = ogSoundPath.Split('/');
-
-        if (!Directory.Exists(Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, ogSoundPathNames[1])))
-            return ogSoundPath;
-
-        if (!ModSettings.GetBool("Deactivate Custom Triggers", "JAN.soundpacks") && (ModSettings.GetBool("Allow Custom Triggers SFX", "JAN.soundpacks") || (ogSoundPathNames[1] != "Steps" &&
-            ogSoundPathNames[1] != "UI")))
+        static private string[] toCheck { get; } = {
+            "UI",
+            "Steps",
+            "Sfx",
+            "Music",
+            "Cauldron"
+        };
+        public static List<string> subfolders = new();
+        public static Dictionary<string, string> soundpacks = new();
+        public static bool draw = false;
+        public static bool win = false;
+        public static bool loop = false;
+        public static bool isRapid = false;
+        public static bool isTT = false;
+        public static string gameVelocity = "";
+        public static string loopString = "";
+        public static bool targetOnStand = false; // when you are exe.
+        public static bool playerOnStand = false; //when you have been voted.
+        public static bool prosecutor = false; //if a prosecutor is prosecuting someone.
+        public static List<Role> horsemen = new();
+        public static bool dayOne = false; // if it is day one.
+        public static string directoryPath;
+        public static string soundpack;
+        public static string curExtension = null;
+        public static string GetCustomSound(string ogSoundPath)
         {
-            if (Pepper.IsGamePhasePlay())
+            string[] ogSoundPathNames = ogSoundPath.Split('/');
+            if (!Directory.Exists(Path.Combine(directoryPath, soundpack, ogSoundPathNames[1])))
             {
-                var roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
-                var roleFolderName = roleData.roleName;
-
-                if (ogSoundPathNames[1] == "Music")
+                return ogSoundPath;
+            }
+            if (!ModSettings.GetBool("Deactivate Custom Triggers", "JAN.soundpacks") && (ModSettings.GetBool("Allow Custom Triggers SFX", "JAN.soundpacks") || (ogSoundPathNames[1] != "Steps" && ogSoundPathNames[1] != "UI")))
+            {
+                if (Pepper.IsGamePhasePlay())
                 {
-                    if (Loop)
-                        return loopString;
-
-                    if (DayOne && ogSoundPathNames[2] == "DiscussionMusic")
+                    RoleData roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
+                    string alignment = roleData.roleAlignment.ToString().ToTitleCase();
+                    string subalignment = $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}";
+                    string roleFolderName = roleData.roleName;
+                    if (ogSoundPathNames[1] == "Music")
                     {
-                        var modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
-
-                        if (modifiers.Contains(Role.FAST_MODE))
+                        if (loop)
                         {
-                            Debug.LogError("it is fast mode");
-                            GameVelocity += "FastMode";
-                        }
-                        else if (modifiers.Contains(Role.SLOW_MODE))
-                        {
-                            Debug.LogError("it is slow mode");
-                            GameVelocity += "SlowMode";
-                        }
-                        else
-                        {
-                            Debug.LogError("no modifier");
-                            GameVelocity = "";
+                            return loopString;
                         }
 
-                        Debug.LogWarning("It is day one");
-                        DayOne = false;
-                        var pathToFirstDay = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName, "Music", "DayOne");
-                        var customSoundPath = FindCustomSound(pathToFirstDay);
-
-                        if (!string.IsNullOrEmpty(customSoundPath))
-                            return customSoundPath;
-
-                        pathToFirstDay = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Music", "DayOne");
-                        customSoundPath = FindCustomSound(pathToFirstDay);
-
-                        if (!string.IsNullOrEmpty(customSoundPath))
-                            return customSoundPath;
-
-                        Debug.Log(pathToFirstDay + " was not found.");
-                    }
-
-                    if (ogSoundPathNames[2] == "Judgement")
-                    {
-                        if (Prosecutor) //test
+                        if (dayOne && ogSoundPathNames[2] == "DiscussionMusic")
                         {
-                            if (Pepper.GetMyRole() == Role.EXECUTIONER && TargetOnStand)
+                            List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
+                            if (modifiers.Contains(Role.FAST_MODE))
                             {
-                                var pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Executioner")).Replace(ogSoundPathNames[2],
-                                    $"Target{ogSoundPathNames[2]}Prosecutor");
-                                var customSoundPath = FindCustomSound(pathToTargetPros);
-
-                                if (!string.IsNullOrEmpty(customSoundPath))
-                                    return customSoundPath;
+                                gameVelocity += "FastMode";
                             }
-                            else if (PlayerOnStand)
+                            else if (modifiers.Contains(Role.SLOW_MODE))
                             {
-                                if (IsTT)
-                                {
-                                    var pathToTT = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor")).Replace(ogSoundPathNames[2],
-                                        $"Player{ogSoundPathNames[2]}Prosecutor");
-                                    var customTTSoundPath = FindCustomSound(pathToTT);
-
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-
-                                if (Horsemen.Count > 0)
-                                {
-                                    if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
-                                    {
-                                        // could this switch have been done with a method instead? yeah but was more easy like this.
-                                        switch (roleData.role)
-                                        {
-                                            case Role.SOULCOLLECTOR:
-                                                var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "PlayerJudgementProsecutor");
-                                                var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                                if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                                    return customMeDeathVelocitySoundsPath;
-
-                                                break;
-
-                                            case Role.BERSERKER:
-                                                var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "PlayerJudgementProsecutor");
-                                                var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                                if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                                    return customMeBersVelocitySoundsPath;
-
-                                                break;
-
-                                            case Role.PLAGUEBEARER:
-                                                var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "PlayerJudgementProsecutor");
-                                                var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                                if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                                    return customMePestVelocitySoundsPath;
-
-                                                break;
-
-                                            case Role.BAKER:
-                                                var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "PlayerJudgementProsecutor");
-                                                var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                                if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                                    return customMeFamVelocitySoundsPath;
-
-                                                break;
-                                        }
-                                    }
-
-                                    var pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen")).Replace(ogSoundPathNames[2],
-                                        $"Player{ogSoundPathNames[2]}Prosecutor");
-                                    var customHorsemenSoundPath = FindCustomSound(pathToHorsemen);
-
-                                    if (!string.IsNullOrEmpty(customHorsemenSoundPath))
-                                        return customHorsemenSoundPath;
-                                }
-
-                                var pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName)).Replace(ogSoundPathNames[2],
-                                    $"Player{ogSoundPathNames[2]}Prosecutor");
-                                var customSoundPath = FindCustomSound(pathToTargetPros);
-
-                                if (!string.IsNullOrEmpty(customSoundPath))
-                                    return customSoundPath;
-
-                                pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack)).Replace(ogSoundPathNames[2],
-                                    $"Player{ogSoundPathNames[2]}Prosecutor");
-                                customSoundPath = FindCustomSound(pathToTargetPros);
-
-                                if (!string.IsNullOrEmpty(customSoundPath))
-                                    return customSoundPath;
+                                gameVelocity += "SlowMode";
                             }
-
-                            if (IsTT)
+                            else
                             {
-                                var pathToTT = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor")).Replace(ogSoundPathNames[2],
-                                    $"{ogSoundPathNames[2]}Prosecutor");
-                                var customTTSoundPath = FindCustomSound(pathToTT);
-
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
+                                gameVelocity = "";
                             }
-
-                            if (Horsemen.Count > 0)
-                            {
-                                if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
-                                {
-                                    switch (roleData.role)
-                                    {
-                                        case Role.SOULCOLLECTOR:
-                                            var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                            var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                                return customMeDeathVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.BERSERKER:
-                                            var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                            var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                                return customMeBersVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.PLAGUEBEARER:
-                                            var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                            var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                                return customMePestVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.BAKER:
-                                            var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                            var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                                return customMeFamVelocitySoundsPath;
-
-                                            break;
-                                    }
-                                }
-
-                                var pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen")).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
-                                var customSoundPath = FindCustomSound(pathToHorsemen);
-
-                                if (!string.IsNullOrEmpty(customSoundPath))
-                                    return customSoundPath;
-                            }
-
-                            var pathToPros = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
-                            var customProsSoundPath = FindCustomSound(pathToPros);
-
-                            if (!string.IsNullOrEmpty(customProsSoundPath))
-                                return customProsSoundPath;
-
-                            pathToPros = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
-                            customProsSoundPath = FindCustomSound(pathToPros);
-
-                            if (!string.IsNullOrEmpty(customProsSoundPath))
-                                return customProsSoundPath;
-                        }
-
-                        if (Pepper.GetMyRole() == Role.EXECUTIONER && TargetOnStand)
-                        {
-                            //test
-                            var pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2]);
-                            var customTargetSoundPath = FindCustomSound(pathToTarget);
-
-                            if (!string.IsNullOrEmpty(customTargetSoundPath))
-                                return customTargetSoundPath;
-                        }
-                        else if (PlayerOnStand)
-                        {
-                            if (IsTT)
-                            {
-                                var pathToTT = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                                var customTTSoundPath = FindCustomSound(pathToTT);
-
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
-                            }
-
-                            if (Horsemen.Count > 0)
-                            {
-                                if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
-                                {
-                                    switch (roleData.role)
-                                    {
-                                        case Role.SOULCOLLECTOR:
-                                            var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                            var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                                return customMeDeathVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.BERSERKER:
-                                            var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                            var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                                return customMeBersVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.PLAGUEBEARER:
-                                            var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                            var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                                return customMePestVelocitySoundsPath;
-
-                                            break;
-
-                                        case Role.BAKER:
-                                            var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                            var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                            if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                                return customMeFamVelocitySoundsPath;
-
-                                            break;
-                                    }
-                                }
-
-                                var pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                                var customSoundPath = FindCustomSound(pathToHorsemen);
-
-                                if (!string.IsNullOrEmpty(customSoundPath))
-                                    return customSoundPath;
-                            }
-
-                            var pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                            var customTargetSoundPath = FindCustomSound(pathToTarget);
-
-                            if (!string.IsNullOrEmpty(customTargetSoundPath))
-                                return customTargetSoundPath;
-
-                            pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                            customTargetSoundPath = FindCustomSound(pathToTarget);
-
-                            if (!string.IsNullOrEmpty(customTargetSoundPath))
-                                return customTargetSoundPath;
-                        }
-
-                        if (IsTT)
-                        {
-                            var pathToTT = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor"));
-                            var customTTSoundPath = FindCustomSound(pathToTT);
-
-                            if (!string.IsNullOrEmpty(customTTSoundPath))
-                                return customTTSoundPath;
-                        }
-
-                        if (Horsemen.Count > 0)
-                        {
-                            if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
-                            {
-                                switch (roleData.role)
-                                {
-                                    case Role.SOULCOLLECTOR:
-                                        var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                        var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                            return customMeDeathVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BERSERKER:
-                                        var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                        var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                            return customMeBersVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.PLAGUEBEARER:
-                                        var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                        var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                            return customMePestVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BAKER:
-                                        var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                        var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                            return customMeFamVelocitySoundsPath;
-
-                                        break;
-                                }
-                            }
-
-                            var pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen"));
-                            var customSoundPath = FindCustomSound(pathToHorsemen);
-
+                            dayOne = false;
+                            string pathToFirstDay = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "DayOne");
+                            string customSoundPath = FindCustomSound(pathToFirstDay);
+                            if (!string.IsNullOrEmpty(customSoundPath))
+                                return customSoundPath;
+                            pathToFirstDay = Path.Combine(directoryPath, soundpack, subalignment, "Music", "DayOne");
+                            customSoundPath = FindCustomSound(pathToFirstDay);
+                            if (!string.IsNullOrEmpty(customSoundPath))
+                                return customSoundPath;
+                            pathToFirstDay = Path.Combine(directoryPath, soundpack, alignment,"Music", "DayOne");
+                            customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
                         }
 
-                        var pathToSound = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName));
-                        var SoundPath = FindCustomSound(pathToSound);
-
-                        if (!string.IsNullOrEmpty(SoundPath))
-                            return SoundPath;
-
-                        pathToSound = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack));
-                        SoundPath = FindCustomSound(pathToSound);
-
-                        if (!string.IsNullOrEmpty(SoundPath))
-                            return SoundPath;
-                    }
-                    if (IsRapid)
-                    {
-                        if (ModSettings.GetBool("Looping Rapid Mode")) //needs test
+                        if (ogSoundPathNames[2] == "Judgement")
                         {
-                            if (IsTT)
+                            if (prosecutor) //test
                             {
-                                var pathToTT = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor", "Music", "RapidModeLooping");
-                                var customTTSoundPath = FindCustomSound(pathToTT);
+                                if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
+                                {
+                                    string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2] + "Prosecutor");
+                                    string customSoundPath = FindCustomSound(pathToTargetPros);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                }
+                                else if (playerOnStand)
+                                {
+                                    if (isTT)
+                                    {
+                                        string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                        string customTTSoundPath = FindCustomSound(pathToTT);
+                                        if (!string.IsNullOrEmpty(customTTSoundPath))
+                                            return customTTSoundPath;
+                                    }
+                                    if (horsemen.Count > 0)
+                                    {
+                                        if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                                        {
+                                            // could this switch have been done with a method instead? yeah but was more easy like this.
+                                            switch (roleData.role)
+                                            {
+                                                case Role.SOULCOLLECTOR:
+                                                    string pathToMeDeathVelocitySounds = Path.Combine(directoryPath, soundpack, "Death", "Music", "PlayerJudgementProsecutor");
+                                                    string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                                    if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                                    {
+                                                        return customMeDeathVelocitySoundsPath;
+                                                    }
+                                                    break;
+                                                case Role.BERSERKER:
+                                                    string pathToMeBersVelocitySounds = Path.Combine(directoryPath, soundpack, "War", "Music", "PlayerJudgementProsecutor");
+                                                    string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                                    if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                                    {
+                                                        return customMeBersVelocitySoundsPath;
+                                                    }
+                                                    break;
+                                                case Role.PLAGUEBEARER:
+                                                    string pathToMePestVelocitySounds = Path.Combine(directoryPath, soundpack, "Pestilence", "Music", "PlayerJudgementProsecutor");
+                                                    string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                                    if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                                    {
+                                                        return customMePestVelocitySoundsPath;
+                                                    }
+                                                    break;
+                                                case Role.BAKER:
+                                                    string pathToMeFamVelocitySounds = Path.Combine(directoryPath, soundpack, "Famine", "Music", "PlayerJudgementProsecutor");
+                                                    string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                                    if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                                    {
+                                                        return customMeFamVelocitySoundsPath;
+                                                    }
+                                                    break;
+                                            }
+                                        }
 
+                                        string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                        string customHorsemenSoundPath = FindCustomSound(pathToHorsemen);
+                                        if (!string.IsNullOrEmpty(customHorsemenSoundPath))
+                                            return customHorsemenSoundPath;
+                                    }
+                                    string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                    string customSoundPath = FindCustomSound(pathToTargetPros);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                    pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                    customSoundPath = FindCustomSound(pathToTargetPros);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                    pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                    customSoundPath = FindCustomSound(pathToTargetPros);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                    pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
+                                    customSoundPath = FindCustomSound(pathToTargetPros);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                }
+                                if (isTT)
+                                {
+                                    string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                    string customTTSoundPath = FindCustomSound(pathToTT);
+                                    if (!string.IsNullOrEmpty(customTTSoundPath))
+                                        return customTTSoundPath;
+                                }
+                                if (horsemen.Count > 0)
+                                {
+                                    if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                                    {
+                                        switch (roleData.role)
+                                        {
+                                            case Role.SOULCOLLECTOR:
+                                                string pathToMeDeathVelocitySounds = Path.Combine(directoryPath, soundpack, "Death", "Music", "JudgementProsecutor");
+                                                string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                                {
+                                                    return customMeDeathVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BERSERKER:
+                                                string pathToMeBersVelocitySounds = Path.Combine(directoryPath, soundpack, "War", "Music", "JudgementProsecutor");
+                                                string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                                {
+                                                    return customMeBersVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.PLAGUEBEARER:
+                                                string pathToMePestVelocitySounds = Path.Combine(directoryPath, soundpack, "Pestilence", "Music", "JudgementProsecutor");
+                                                string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                                {
+                                                    return customMePestVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BAKER:
+                                                string pathToMeFamVelocitySounds = Path.Combine(directoryPath, soundpack, "Famine", "Music", "JudgementProsecutor");
+                                                string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                                {
+                                                    return customMeFamVelocitySoundsPath;
+                                                }
+                                                break;
+                                        }
+                                    }
+                                    string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen")).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                    string customSoundPath = FindCustomSound(pathToHorsemen);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                }
+                                string pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                string customProsSoundPath = FindCustomSound(pathToPros);
+                                if (!string.IsNullOrEmpty(customProsSoundPath))
+                                    return customProsSoundPath;
+                                    pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                customProsSoundPath = FindCustomSound(pathToPros);
+                                if (!string.IsNullOrEmpty(customProsSoundPath))
+                                    return customProsSoundPath;
+                                    pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                customProsSoundPath = FindCustomSound(pathToPros);
+                                if (!string.IsNullOrEmpty(customProsSoundPath))
+                                    return customProsSoundPath;
+                                pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                customProsSoundPath = FindCustomSound(pathToPros);
+                                if (!string.IsNullOrEmpty(customProsSoundPath))
+                                    return customProsSoundPath;
+                            }
+                            if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
+                            {
+                                //test
+                                string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2]);
+                                string customTargetSoundPath = FindCustomSound(pathToTarget);
+                                if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                    return customTargetSoundPath;
+
+                            }
+                            else if (playerOnStand)
+                            {
+                                if (isTT)
+                                {
+                                    string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                    string customTTSoundPath = FindCustomSound(pathToTT);
+                                    if (!string.IsNullOrEmpty(customTTSoundPath))
+                                        return customTTSoundPath;
+                                }
+                                if (horsemen.Count > 0)
+                                {
+                                    if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                                    {
+                                        switch (roleData.role)
+                                        {
+                                            case Role.SOULCOLLECTOR:
+                                                string pathToMeDeathVelocitySounds = Path.Combine(directoryPath, soundpack, "Death", "Music", "PlayerJudgement");
+                                                string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                                {
+                                                    return customMeDeathVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BERSERKER:
+                                                string pathToMeBersVelocitySounds = Path.Combine(directoryPath, soundpack, "War", "Music", "PlayerJudgement");
+                                                string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                                {
+                                                    return customMeBersVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.PLAGUEBEARER:
+                                                string pathToMePestVelocitySounds = Path.Combine(directoryPath, soundpack, "Pestilence", "Music", "PlayerJudgement");
+                                                string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                                {
+                                                    return customMePestVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BAKER:
+                                                string pathToMeFamVelocitySounds = Path.Combine(directoryPath, soundpack, "Famine", "Music", "PlayerJudgement");
+                                                string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                                {
+                                                    return customMeFamVelocitySoundsPath;
+                                                }
+                                                break;
+                                        }
+                                    }
+                                    string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                    string customSoundPath = FindCustomSound(pathToHorsemen);
+                                    if (!string.IsNullOrEmpty(customSoundPath))
+                                        return customSoundPath;
+                                }
+                                string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                string customTargetSoundPath = FindCustomSound(pathToTarget);
+                                if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                    return customTargetSoundPath;
+                                pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                customTargetSoundPath = FindCustomSound(pathToTarget);
+                                if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                    return customTargetSoundPath;
+                                    pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                customTargetSoundPath = FindCustomSound(pathToTarget);
+                                if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                    return customTargetSoundPath;
+                                pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                customTargetSoundPath = FindCustomSound(pathToTarget);
+                                if (!string.IsNullOrEmpty(customTargetSoundPath))
+                                    return customTargetSoundPath;
+                            }
+                            if (isTT)
+                            {
+                                string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor"));
+                                string customTTSoundPath = FindCustomSound(pathToTT);
                                 if (!string.IsNullOrEmpty(customTTSoundPath))
                                     return customTTSoundPath;
                             }
-
-                            if (Horsemen.Count > 0)
+                            if (horsemen.Count > 0)
                             {
                                 if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                 {
                                     switch (roleData.role)
                                     {
                                         case Role.SOULCOLLECTOR:
-                                            var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                            var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
+                                            string pathToMeDeathVelocitySounds = Path.Combine(directoryPath, soundpack, "Death", "Music", "Judgement");
+                                            string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
                                             if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                            {
                                                 return customMeDeathVelocitySoundsPath;
-
+                                            }
                                             break;
-
                                         case Role.BERSERKER:
-                                            var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                            var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
+                                            string pathToMeBersVelocitySounds = Path.Combine(directoryPath, soundpack, "War", "Music", "Judgement");
+                                            string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
                                             if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                            {
                                                 return customMeBersVelocitySoundsPath;
-
+                                            }
                                             break;
-
                                         case Role.PLAGUEBEARER:
-                                            var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                            var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
+                                            string pathToMePestVelocitySounds = Path.Combine(directoryPath, soundpack, "Pestilence", "Music", "Judgement");
+                                            string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
                                             if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                            {
                                                 return customMePestVelocitySoundsPath;
-
+                                            }
                                             break;
-
                                         case Role.BAKER:
-                                            var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                            var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
+                                            string pathToMeFamVelocitySounds = Path.Combine(directoryPath, soundpack, "Famine", "Music", "Judgement");
+                                            string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
                                             if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                            {
                                                 return customMeFamVelocitySoundsPath;
-
+                                            }
                                             break;
                                     }
                                 }
+                                string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen"));
+                                string customSoundPath = FindCustomSound(pathToHorsemen);
+                                if (!string.IsNullOrEmpty(customSoundPath))
+                                    return customSoundPath;
+                            }
+                            string pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName));
+                            string SoundPath = FindCustomSound(pathToSound);
+                            if (!string.IsNullOrEmpty(SoundPath))
+                                return SoundPath;
+                                pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment));
+                            SoundPath = FindCustomSound(pathToSound);
+                            if (!string.IsNullOrEmpty(SoundPath))
+                                return SoundPath;
+                                pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
+                            SoundPath = FindCustomSound(pathToSound);
+                            if (!string.IsNullOrEmpty(SoundPath))
+                                return SoundPath;
+                            pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack));
+                            SoundPath = FindCustomSound(pathToSound);
+                            if (!string.IsNullOrEmpty(SoundPath))
+                                return SoundPath;
+                        }
+                        if (isRapid)
+                        {
+                            if (ModSettings.GetBool("Looping Rapid Mode")) //needs test
+                            {
+                                if (isTT)
+                                {
+                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidModeLooping");
+                                    string customTTSoundPath = FindCustomSound(pathToTT);
+                                    if (!string.IsNullOrEmpty(customTTSoundPath))
+                                        return customTTSoundPath;
+                                }
+                                if (horsemen.Count > 0)
+                                {
+                                    if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                                    {
+                                        switch (roleData.role)
+                                        {
+                                            case Role.SOULCOLLECTOR:
+                                                string pathToMeDeathVelocitySounds = Path.Combine(directoryPath, soundpack, "Death", "Music", "RapidModeLooping");
+                                                string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                                {
+                                                    return customMeDeathVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BERSERKER:
+                                                string pathToMeBersVelocitySounds = Path.Combine(directoryPath, soundpack, "War", "Music", "RapidModeLooping");
+                                                string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                                {
+                                                    return customMeBersVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.PLAGUEBEARER:
+                                                string pathToMePestVelocitySounds = Path.Combine(directoryPath, soundpack, "Pestilence", "Music", "RapidModeLooping");
+                                                string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                                {
+                                                    return customMePestVelocitySoundsPath;
+                                                }
+                                                break;
+                                            case Role.BAKER:
+                                                string pathToMeFamVelocitySounds = Path.Combine(directoryPath, soundpack, "Famine", "Music", "RapidModeLooping");
+                                                string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                                if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                                {
+                                                    return customMeFamVelocitySoundsPath;
+                                                }
+                                                break;
+                                        }
+                                    }
+                                    string pathToHorsemenVelocitySounds = Path.Combine(directoryPath, soundpack, "Horsemen", "Music", "RapidModeLooping");
+                                    string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
+                                    if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
+                                    {
+                                        loop = true;
+                                        loopString = customHorsemenVelocitySoundsPath;
+                                        return customHorsemenVelocitySoundsPath;
 
-                                var pathToHorsemenVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen", "Music", "RapidModeLooping");
-                                var customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
-
+                                    }
+                                }
+                                string pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "RapidModeLooping");
+                                string customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                                if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                                {
+                                    loop = true;
+                                    loopString = customRapidSoundsPath;
+                                    return customRapidSoundsPath;
+                                }
+                                pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, subalignment, "Music", "RapidModeLooping");
+                                customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                                if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                                {
+                                    loop = true;
+                                    loopString = customRapidSoundsPath;
+                                    return customRapidSoundsPath;
+                                }
+                                pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, alignment,"Music", "RapidModeLooping");
+                                customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                                if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                                {
+                                    loop = true;
+                                    loopString = customRapidSoundsPath;
+                                    return customRapidSoundsPath;
+                                }
+                                pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, "Music", "RapidModeLooping");
+                                customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
+                                if (!string.IsNullOrEmpty(customRapidSoundsPath))
+                                {
+                                    loop = true;
+                                    loopString = customRapidSoundsPath;
+                                    return customRapidSoundsPath;
+                                }
+                            }
+                            if (isTT)
+                            {
+                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidMode" + ogSoundPathNames[2]);
+                                string customTTSoundPath = FindCustomSound(pathToTT);
+                                if (!string.IsNullOrEmpty(customTTSoundPath))
+                                    return customTTSoundPath;
+                            }
+                            if (horsemen.Count > 0)
+                            {
+                                if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                                {
+                                    switch (roleData.role)
+                                    {
+                                        case Role.SOULCOLLECTOR:
+                                            string pathToMeDeathVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Death")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                                            string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                            {
+                                                return customMeDeathVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.BERSERKER:
+                                            string pathToMeBersVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "War")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                                            string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                            {
+                                                return customMeBersVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.PLAGUEBEARER:
+                                            string pathToMePestVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Pestilence")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                                            string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                            {
+                                                return customMePestVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.BAKER:
+                                            string pathToMeFamVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Famine")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]);
+                                            string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                            {
+                                                return customMeFamVelocitySoundsPath;
+                                            }
+                                            break;
+                                    }
+                                }
+                                string pathToHorsemenVelocitySounds = Path.Combine(directoryPath, soundpack, "Horsemen", "Music", "RapidMode" + ogSoundPathNames[2]);
+                                string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
                                 if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
                                 {
-                                    Loop = true;
-                                    loopString = customHorsemenVelocitySoundsPath;
                                     return customHorsemenVelocitySoundsPath;
                                 }
                             }
-
-                            var pathToCustomRapidSounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName, "Music", "RapidModeLooping");
-                            var customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
-
-                            if (!string.IsNullOrEmpty(customRapidSoundsPath))
-                            {
-                                Loop = true;
-                                loopString = customRapidSoundsPath;
-                                return customRapidSoundsPath;
-                            }
-
-                            pathToCustomRapidSounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Music", "RapidModeLooping");
-                            customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
-
-                            if (!string.IsNullOrEmpty(customRapidSoundsPath))
-                            {
-                                Loop = true;
-                                loopString = customRapidSoundsPath;
-                                return customRapidSoundsPath;
-                            }
+                            string pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "RapidMode" + ogSoundPathNames[2]);
+                            string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, subalignment,"Music", "RapidMode" + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, alignment,"Music", "RapidMode" + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, "Music", "RapidMode" + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
                         }
-
-                        if (IsTT)
+                        else if (!string.IsNullOrEmpty(gameVelocity))
                         {
-                            var pathToTT = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor", "Music", "RapidMode" + ogSoundPathNames[2]);
-                            var customTTSoundPath = FindCustomSound(pathToTT);
-
-                            if (!string.IsNullOrEmpty(customTTSoundPath))
-                                return customTTSoundPath;
-                        }
-
-                        if (Horsemen.Count > 0)
-                        {
-                            if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                            if (isTT)
                             {
-                                switch (roleData.role)
+                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", gameVelocity + ogSoundPathNames[2]);
+                                string customTTSoundPath = FindCustomSound(pathToTT);
+                                if (!string.IsNullOrEmpty(customTTSoundPath))
+                                    return customTTSoundPath;
+                            }
+                            if (horsemen.Count > 0)
+                            {
+                                if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                 {
-                                    case Role.SOULCOLLECTOR:
-                                        var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                        var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                            return customMeDeathVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BERSERKER:
-                                        var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                        var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                            return customMeBersVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.PLAGUEBEARER:
-                                        var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                        var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                            return customMePestVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BAKER:
-                                        var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                        var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                            return customMeFamVelocitySoundsPath;
-
-                                        break;
+                                    switch (roleData.role)
+                                    {
+                                        case Role.SOULCOLLECTOR:
+                                            string pathToMeDeathVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Death")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                                            string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                            {
+                                                return customMeDeathVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.BERSERKER:
+                                            string pathToMeBersVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "War")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                                            string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                            {
+                                                return customMeBersVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.PLAGUEBEARER:
+                                            string pathToMePestVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Pestilence")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                                            string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                            {
+                                                return customMePestVelocitySoundsPath;
+                                            }
+                                            break;
+                                        case Role.BAKER:
+                                            string pathToMeFamVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Famine")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                                            string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                            if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                            {
+                                                return customMeFamVelocitySoundsPath;
+                                            }
+                                            break;
+                                    }
+                                }
+                                string pathToHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                                string customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
+                                if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
+                                {
+                                    return customHorsemenVelocitySoundsPath;
                                 }
                             }
-
-                            var pathToHorsemenVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen", "Music", "RapidMode" + ogSoundPathNames[2]);
-                            var customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
-
-                            if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
-                                return customHorsemenVelocitySoundsPath;
+                            string pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                            string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
+                            pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack)).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]);
+                            customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
+                            if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
                         }
-
-                        var pathToCustomVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName, "Music", "RapidMode" + ogSoundPathNames[2]);
-                        var customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath))
-                            return customVelocitySoundsPath;
-
-                        pathToCustomVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Music", "RapidMode" + ogSoundPathNames[2]);
-                        customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath))
-                            return customVelocitySoundsPath;
                     }
-                    else if (!string.IsNullOrEmpty(GameVelocity))
+                    if (isTT)
                     {
-                        if (IsTT)
+                        string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor"));
+                        string customTTSoundPath = FindCustomSound(pathToTT);
+                        if (!string.IsNullOrEmpty(customTTSoundPath))
+                            return customTTSoundPath;
+                    }
+                    if (horsemen.Count > 0)
+                    {
+                        if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                         {
-                            var pathToTT = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor", "Music", GameVelocity + ogSoundPathNames[2]);
-                            var customTTSoundPath = FindCustomSound(pathToTT);
-
-                            if (!string.IsNullOrEmpty(customTTSoundPath))
-                                return customTTSoundPath;
-                        }
-
-                        if (Horsemen.Count > 0)
-                        {
-                            if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                            switch (roleData.role)
                             {
-                                switch (roleData.role)
-                                {
-                                    case Role.SOULCOLLECTOR:
-                                        var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                        var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                            return customMeDeathVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BERSERKER:
-                                        var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                        var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                            return customMeBersVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.PLAGUEBEARER:
-                                        var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                        var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                            return customMePestVelocitySoundsPath;
-
-                                        break;
-
-                                    case Role.BAKER:
-                                        var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                        var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                        if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                            return customMeFamVelocitySoundsPath;
-
-                                        break;
-                                }
+                                case Role.SOULCOLLECTOR:
+                                    string pathToMeDeathVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Death"));
+                                    string customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
+                                    if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
+                                    {
+                                        return customMeDeathVelocitySoundsPath;
+                                    }
+                                    break;
+                                case Role.BERSERKER:
+                                    string pathToMeBersVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "War"));
+                                    string customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
+                                    if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
+                                    {
+                                        return customMeBersVelocitySoundsPath;
+                                    }
+                                    break;
+                                case Role.PLAGUEBEARER:
+                                    string pathToMePestVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Pestilence"));
+                                    string customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
+                                    if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
+                                    {
+                                        return customMePestVelocitySoundsPath;
+                                    }
+                                    break;
+                                case Role.BAKER:
+                                    string pathToMeFamVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Famine"));
+                                    string customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
+                                    if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
+                                    {
+                                        return customMeFamVelocitySoundsPath;
+                                    }
+                                    break;
                             }
-
-                            var pathToHorsemenVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen")).Replace(ogSoundPathNames[2], GameVelocity + ogSoundPathNames[2]);
-                            var customHorsemenVelocitySoundsPath = FindCustomSound(pathToHorsemenVelocitySounds);
-
-                            if (!string.IsNullOrEmpty(customHorsemenVelocitySoundsPath))
-                                return customHorsemenVelocitySoundsPath;
                         }
-
-                        var pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName)).Replace(ogSoundPathNames[2], GameVelocity + ogSoundPathNames[2]);
-                        var customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath))
-                            return customVelocitySoundsPath;
-
-                        pathToCustomVelocitySounds = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack)).Replace(ogSoundPathNames[2], GameVelocity + ogSoundPathNames[2]);
-                        customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
-
-                        if (!string.IsNullOrEmpty(customVelocitySoundsPath))
-                            return customVelocitySoundsPath;
+                        string pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Horsemen"));
+                        string customSoundPath = FindCustomSound(pathToHorsemen);
+                        if (!string.IsNullOrEmpty(customSoundPath))
+                            return customSoundPath;
                     }
+                    string pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName));
+                    string customRoleSoundPath = FindCustomSound(pathToRoleSounds);
+                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
+                    pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment));
+                    customRoleSoundPath = FindCustomSound(pathToRoleSounds);
+                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
+                    pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
+                    customRoleSoundPath = FindCustomSound(pathToRoleSounds);
+                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
                 }
-
-                if (IsTT)
+                if (draw && ogSoundPathNames[2] == "CovenVictory") //test
                 {
-                    var pathToTT = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Town Traitor"));
-                    var customTTSoundPath = FindCustomSound(pathToTT);
-
-                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                        return customTTSoundPath;
+                    draw = false;
+                    string pathToCustomDrawMusic = Path.Combine(directoryPath, soundpack, "Music", "DrawMusic");
+                    string customDrawMusicPath = FindCustomSound(pathToCustomDrawMusic);
+                    if (!string.IsNullOrEmpty(customDrawMusicPath)) return customDrawMusicPath;
                 }
-
-                if (Horsemen.Count > 0)
+                if (ogSoundPathNames[2] == "LoginMusicLoop_old")
                 {
-                    if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
+                    if (win)
                     {
-                        switch (roleData.role)
-                        {
-                            case Role.SOULCOLLECTOR:
-                                var pathToMeDeathVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Death", "Music", "JudgementProsecutor");
-                                var customMeDeathVelocitySoundsPath = FindCustomSound(pathToMeDeathVelocitySounds);
-
-                                if (!string.IsNullOrEmpty(customMeDeathVelocitySoundsPath))
-                                    return customMeDeathVelocitySoundsPath;
-
-                                break;
-
-                            case Role.BERSERKER:
-                                var pathToMeBersVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "War", "Music", "JudgementProsecutor");
-                                var customMeBersVelocitySoundsPath = FindCustomSound(pathToMeBersVelocitySounds);
-
-                                if (!string.IsNullOrEmpty(customMeBersVelocitySoundsPath))
-                                    return customMeBersVelocitySoundsPath;
-
-                                break;
-
-                            case Role.PLAGUEBEARER:
-                                var pathToMePestVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Pestilence", "Music", "JudgementProsecutor");
-                                var customMePestVelocitySoundsPath = FindCustomSound(pathToMePestVelocitySounds);
-
-                                if (!string.IsNullOrEmpty(customMePestVelocitySoundsPath))
-                                    return customMePestVelocitySoundsPath;
-
-                                break;
-
-                            case Role.BAKER:
-                                var pathToMeFamVelocitySounds = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Famine", "Music", "JudgementProsecutor");
-                                var customMeFamVelocitySoundsPath = FindCustomSound(pathToMeFamVelocitySounds);
-
-                                if (!string.IsNullOrEmpty(customMeFamVelocitySoundsPath))
-                                    return customMeFamVelocitySoundsPath;
-
-                                break;
-                        }
+                        string pathToCustomWin = Path.Combine(directoryPath, soundpack, "Music", "VictoryMusic");
+                        string customWinMusicPath = FindCustomSound(pathToCustomWin);
+                        if (!string.IsNullOrEmpty(customWinMusicPath)) return customWinMusicPath;
                     }
-
-                    var pathToHorsemen = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Horsemen"));
-                    var customSoundPath = FindCustomSound(pathToHorsemen);
-
-                    if (!string.IsNullOrEmpty(customSoundPath))
-                        return customSoundPath;
+                    else
+                    {
+                        string pathToCustomWin = Path.Combine(directoryPath, soundpack, "Music", "DefeatMusic");
+                        string customWinMusicPath = FindCustomSound(pathToCustomWin);
+                        if (!string.IsNullOrEmpty(customWinMusicPath)) return customWinMusicPath;
+                    }
                 }
+            }
+            string pathToCustomSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack));
+            string customPath = FindCustomSound(pathToCustomSounds);
+            if (!string.IsNullOrEmpty(customPath)) return customPath; else return ogSoundPath;
+        }
+        static string FindCustomSound(string soundPath) //are you happy now curtis?
+        {
+            if (string.IsNullOrEmpty(soundPath)) return null;
+            string dir = Path.GetDirectoryName(soundPath);
+            if (!Directory.Exists(dir)) goto CheckExtension;
+            string[] files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
+            if (files.Length < 1)
+            {
+                goto CheckExtension;
+            }
+            return files[0];
 
-                var pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, roleFolderName));
-                var customRoleSoundPath = FindCustomSound(pathToRoleSounds);
+        CheckExtension:
+            if (string.IsNullOrEmpty(curExtension)) return null;
+            string extensionPath = soundPath.Replace(soundpack, curExtension);
+            dir = Path.GetDirectoryName(extensionPath);
+            if (!Directory.Exists(dir)) return null;
+            files = Directory.GetFiles(Path.GetDirectoryName(extensionPath), Path.GetFileName(extensionPath) + ".*");
+            if (files.Length < 1)
+            {
+                return null;
+            }
+            return files[0];
+        }
+        public static void LoadSoundpack(string selection)
+        {
+            if(selection == "No Soundpack") {soundpack = "No Soundpack"; AudioController p = UnityEngine.Object.FindObjectOfType<AudioController>();
+            string cuMusic = p.currentMusicSound.Split('/')[2];
+            p.StopMusic();
+            p.PlayMusic($"Audio/Music/{cuMusic}"); return;}
+            string llll = soundpacks[selection];
+            if (!string.IsNullOrEmpty(llll))
+            {
+                soundpack = Path.Combine(llll, selection);
+            }
+            else
+            {
+                soundpack = selection;
+            }
+            curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
+            AudioController a = UnityEngine.Object.FindObjectOfType<AudioController>();
+            string curMusic = a.currentMusicSound.Split('/')[2];
+            a.StopMusic();
+            a.PlayMusic($"Audio/Music/{curMusic}");
+        }
+        public static List<string> GetSubfolders()
+        {
+            List<string> options = new(){
+                "No Subfolder"
+            };
+            foreach (string dir in subfolders)
+            {
+                options.Add(dir);
+            }
+            return options;
+        }
+        public static void ForSoundpackMod()
+        {
 
-                if (!string.IsNullOrEmpty(customRoleSoundPath))
-                    return customRoleSoundPath;
+            directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+            Debug.Log(directoryPath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            Debug.Log("Working?");
+            string[] fullDirectories = Directory.GetDirectories(directoryPath);
+            foreach (string dir in fullDirectories)
+            {
+                string[] insides = Directory.GetDirectories(dir);
+                if (insides.Any(n => toCheck.Contains(Path.GetFileName(n))))
+                {
+                    soundpacks.Add(Path.GetFileName(dir), null);
+                }
+                else
+                {
+                    string dirName = Path.GetFileName(dir);
+                    subfolders.Add(dirName);
+                    foreach(string L in insides){
+                        soundpacks.Add(Path.GetFileName(L), dirName);
+                    }
+                }
+            }
+            string v = ModSettings.GetString("Selected Soundpack");
+            if(v == "No Soundpack") { soundpack = v; return;}
+            string b = soundpacks[v];
+            soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
+            curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
+        }
+        public static string FindExtension(string MeWhen)
+        {
+            if(!File.Exists(MeWhen)) return null;
+            return File.ReadAllText(MeWhen);
+        }
+        public static List<string> GetSoundpacks()
+        {
+            List<string> options = new(){
+                "No Soundpack"
+            };
+            foreach (KeyValuePair<string, string> pair in soundpacks)
+            {
+                options.Add(pair.Key);
+            }
+            return options;
+        }
+        public static void OpenSoundpackDirectory()
+        {
+            string text = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                System.Diagnostics.Process.Start("open", "\"" + text + "\""); //code stolen from tuba
+            }
+            else
+            {
+                Application.OpenURL("file://" + text);
             }
 
-            if (Draw && ogSoundPathNames[2] == "CovenVictory") //test
+        }
+
+
+        //this stuff i got from a 2d beat saber game i did like a year ago.
+
+        public static AudioType GetAudioType(string extension)
+        {
+            extension = extension.ToLower();
+
+            switch (extension)
             {
-                Draw = false;
-                var pathToCustomDrawMusic = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Music", "DrawMusic");
-                var customDrawMusicPath = FindCustomSound(pathToCustomDrawMusic);
-
-                if (!string.IsNullOrEmpty(customDrawMusicPath))
-                    return customDrawMusicPath;
-            }
-
-            if (ogSoundPathNames[2] == "LoginMusicLoop_old")
-            {
-                var pathToCustomWin = Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack, "Music", Win ? "VictoryMusic" : "DefeatMusic");
-                var customWinMusicPath = FindCustomSound(pathToCustomWin);
-
-                if (!string.IsNullOrEmpty(customWinMusicPath))
-                    return customWinMusicPath;
+                case ".wav":
+                    return AudioType.WAV;
+                case ".mp3":
+                    return AudioType.MPEG;
+                case ".ogg":
+                    return AudioType.OGGVORBIS;
+                case ".aiff":
+                    return AudioType.AIFF;
+                case ".mod":
+                    return AudioType.MOD;
+                default:
+                    Debug.LogWarning("AudioUtility: La extensión de archivo " + extension + " no es compatible.");
+                    return AudioType.UNKNOWN;
             }
         }
 
-        var pathToCustomSounds = ogSoundPath.Replace("Audio", Path.Combine(SoundPacks.ModPath, Settings.CurrentSoundPack));
-        var customPath = FindCustomSound(pathToCustomSounds);
-
-        if (!string.IsNullOrEmpty(customPath))
-            return customPath;
-
-        return ogSoundPath;
     }
 
-    private static string FindCustomSound(string soundPath) //are you happy now curtis?
-    {
-        if (string.IsNullOrEmpty(soundPath))
-            return null;
-
-        var dir = Path.GetDirectoryName(soundPath);
-
-        if (!Directory.Exists(dir))
-            return null;
-
-        var files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
-
-        if (files.Length < 1)
-            return null;
-
-        return files[0];
-    }
-
-    //this stuff i got from a 2d beat saber game i did like a year ago.
-    public static AudioType GetAudioType(string extension)
-    {
-        var result = extension.ToLower() switch
-        {
-            ".wav" => AudioType.WAV,
-            ".mp3" => AudioType.MPEG,
-            ".ogg" => AudioType.OGGVORBIS,
-            ".aiff" => AudioType.AIFF,
-            ".mod" => AudioType.MOD,
-            _ => AudioType.UNKNOWN
-        };
-
-        if (result == AudioType.UNKNOWN)
-            Debug.LogWarning($"AudioUtility: La extensión de archivo {extension} no es compatible.");
-
-        return result;
-    }
 }
