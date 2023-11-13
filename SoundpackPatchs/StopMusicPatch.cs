@@ -6,16 +6,19 @@ using System.Collections;
 using UnityEngine.Networking;
 using UnityEngine;
 using Utils;
-namespace SoundpackPatchs{
+namespace SoundpackPatchs
+{
     [HarmonyPatch(typeof(AudioController), "StopMusic")]
-    public class StopMusicPatch{        
-        
-        public static bool Prefix(){
-            
-            if(SoundpackUtils.loop) return false;
+    public class StopMusicPatch
+    {
+
+        public static bool Prefix()
+        {
+
+            if (SoundpackUtils.loop) return false;
             PlayMusicPatch.moddedMusic = "";
             return true;
         }
-		
-}
+
+    }
 }

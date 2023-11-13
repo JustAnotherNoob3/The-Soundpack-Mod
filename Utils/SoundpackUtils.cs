@@ -9,7 +9,6 @@ using Server.Shared.Extensions;
 using System;
 using System.Net.Sockets;
 using System.Linq;
-// ! things left to do: add text saying what randomized soundpack is with the text "You are now hearing: X". add subalignment and alignment stuff. TEST TT. test everything tbh
 namespace Utils
 {
     public class SoundpackUtils
@@ -84,7 +83,7 @@ namespace Utils
                             customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
-                            pathToFirstDay = Path.Combine(directoryPath, soundpack, alignment,"Music", "DayOne");
+                            pathToFirstDay = Path.Combine(directoryPath, soundpack, alignment, "Music", "DayOne");
                             customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
@@ -230,11 +229,11 @@ namespace Utils
                                 string customProsSoundPath = FindCustomSound(pathToPros);
                                 if (!string.IsNullOrEmpty(customProsSoundPath))
                                     return customProsSoundPath;
-                                    pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
                                 customProsSoundPath = FindCustomSound(pathToPros);
                                 if (!string.IsNullOrEmpty(customProsSoundPath))
                                     return customProsSoundPath;
-                                    pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
+                                pathToPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
                                 customProsSoundPath = FindCustomSound(pathToPros);
                                 if (!string.IsNullOrEmpty(customProsSoundPath))
                                     return customProsSoundPath;
@@ -314,7 +313,7 @@ namespace Utils
                                 customTargetSoundPath = FindCustomSound(pathToTarget);
                                 if (!string.IsNullOrEmpty(customTargetSoundPath))
                                     return customTargetSoundPath;
-                                    pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
+                                pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment)).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
                                 customTargetSoundPath = FindCustomSound(pathToTarget);
                                 if (!string.IsNullOrEmpty(customTargetSoundPath))
                                     return customTargetSoundPath;
@@ -379,11 +378,11 @@ namespace Utils
                             string SoundPath = FindCustomSound(pathToSound);
                             if (!string.IsNullOrEmpty(SoundPath))
                                 return SoundPath;
-                                pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment));
+                            pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment));
                             SoundPath = FindCustomSound(pathToSound);
                             if (!string.IsNullOrEmpty(SoundPath))
                                 return SoundPath;
-                                pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
+                            pathToSound = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
                             SoundPath = FindCustomSound(pathToSound);
                             if (!string.IsNullOrEmpty(SoundPath))
                                 return SoundPath;
@@ -469,7 +468,7 @@ namespace Utils
                                     loopString = customRapidSoundsPath;
                                     return customRapidSoundsPath;
                                 }
-                                pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, alignment,"Music", "RapidModeLooping");
+                                pathToCustomRapidSounds = Path.Combine(directoryPath, soundpack, alignment, "Music", "RapidModeLooping");
                                 customRapidSoundsPath = FindCustomSound(pathToCustomRapidSounds);
                                 if (!string.IsNullOrEmpty(customRapidSoundsPath))
                                 {
@@ -543,10 +542,10 @@ namespace Utils
                             string pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "RapidMode" + ogSoundPathNames[2]);
                             string customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
                             if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, subalignment,"Music", "RapidMode" + ogSoundPathNames[2]);
+                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, subalignment, "Music", "RapidMode" + ogSoundPathNames[2]);
                             customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
                             if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
-                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, alignment,"Music", "RapidMode" + ogSoundPathNames[2]);
+                            pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, alignment, "Music", "RapidMode" + ogSoundPathNames[2]);
                             customVelocitySoundsPath = FindCustomSound(pathToCustomVelocitySounds);
                             if (!string.IsNullOrEmpty(customVelocitySoundsPath)) return customVelocitySoundsPath;
                             pathToCustomVelocitySounds = Path.Combine(directoryPath, soundpack, "Music", "RapidMode" + ogSoundPathNames[2]);
@@ -715,9 +714,10 @@ namespace Utils
         static string FindCustomSound(string soundPath) //are you happy now curtis?
         {
             if (string.IsNullOrEmpty(soundPath)) return null;
+            string[] files;
             string dir = Path.GetDirectoryName(soundPath);
             if (!Directory.Exists(dir)) goto CheckExtension;
-            string[] files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
+            files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
             if (files.Length < 1)
             {
                 goto CheckExtension;
@@ -738,10 +738,13 @@ namespace Utils
         }
         public static void LoadSoundpack(string selection)
         {
-            if(selection == "No Soundpack") {soundpack = "No Soundpack"; AudioController p = UnityEngine.Object.FindObjectOfType<AudioController>();
-            string cuMusic = p.currentMusicSound.Split('/')[2];
-            p.StopMusic();
-            p.PlayMusic($"Audio/Music/{cuMusic}"); return;}
+            if (selection == "No Soundpack")
+            {
+                soundpack = "No Soundpack"; AudioController p = UnityEngine.Object.FindObjectOfType<AudioController>();
+                string cuMusic = p.currentMusicSound.Split('/')[2];
+                p.StopMusic();
+                p.PlayMusic($"Audio/Music/{cuMusic}"); return;
+            }
             string llll = soundpacks[selection];
             if (!string.IsNullOrEmpty(llll))
             {
@@ -790,13 +793,14 @@ namespace Utils
                 {
                     string dirName = Path.GetFileName(dir);
                     subfolders.Add(dirName);
-                    foreach(string L in insides){
+                    foreach (string L in insides)
+                    {
                         soundpacks.Add(Path.GetFileName(L), dirName);
                     }
                 }
             }
             string v = ModSettings.GetString("Selected Soundpack");
-            if(v == "No Soundpack") { soundpack = v; return;}
+            if (v == "No Soundpack") { soundpack = v; return; }
             string b = soundpacks[v];
             soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
             curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
@@ -804,7 +808,10 @@ namespace Utils
         public static string FindExtension(string MeWhen)
         {
             if(!File.Exists(MeWhen)) return null;
-            return File.ReadAllText(MeWhen);
+            string file = File.ReadAllText(MeWhen);
+            if(!soundpacks.ContainsKey(file)) return null;
+            string b = soundpacks[file];
+            return string.IsNullOrEmpty(b) ? file : Path.Combine(b, file);
         }
         public static List<string> GetSoundpacks()
         {

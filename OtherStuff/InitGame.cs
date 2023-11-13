@@ -56,17 +56,20 @@ namespace OtherStuff
 
             }
         }
-        public static IEnumerator TextCoroutine(GameObject text, string stringToAdd){
+        public static IEnumerator TextCoroutine(GameObject text, string stringToAdd)
+        {
             yield return new WaitForSeconds(2.25f);
-            for(int i = 0; i < 50; i++){
-            yield return new WaitForSeconds(0.02f);
-            ((RectTransform)text.transform).anchoredPosition -= new Vector2(14.5f, 0f);
+            for (int i = 0; i < 50; i++)
+            {
+                yield return new WaitForSeconds(0.02f);
+                ((RectTransform)text.transform).anchoredPosition -= new Vector2(14.5f, 0f);
             }
             TextMeshProUGUI t = text.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
             yield return new WaitForSeconds(1.5f);
-            for(int j = 0; j < stringToAdd.Length; j++){
-            yield return new WaitForSeconds(0.03f);
-            t.text += stringToAdd[j];
+            for (int j = 0; j < stringToAdd.Length; j++)
+            {
+                yield return new WaitForSeconds(0.03f);
+                t.text += stringToAdd[j];
             }
         }
     }
