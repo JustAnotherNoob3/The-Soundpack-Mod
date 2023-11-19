@@ -37,7 +37,7 @@ namespace Main
                 ModSettings.DropdownSetting SelectedSoundpack = new()
                 {
                     Name = "Selected Soundpack",
-                    Description = "The soundpack you are going to listen to.",
+                    Description = "The soundpack you are going to listen to. Restart the game for this option to update correctly if you made any changes to the organization of folders.",
                     Options = SoundpackUtils.GetSoundpacks(),
                     AvailableInGame = true,
                     Available = true,
@@ -53,7 +53,7 @@ namespace Main
                 ModSettings.DropdownSetting SelectedSubFolder = new()
                 {
                     Name = "Subfolder to randomize",
-                    Description = "The mod will only randomize soundpacks inside this folder.",
+                    Description = "The mod will only randomize soundpacks inside this folder. Restart the game for this option to update correctly if you made any changes to the organization of folders.",
                     Options = SoundpackUtils.GetSubfolders(),
                     AvailableInGame = false,
                     Available = true
