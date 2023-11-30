@@ -19,8 +19,9 @@ namespace SoundpackPatchs
         public static string moddedMusic = "";
         public static bool Prefix(AudioController __instance, string sound, bool loop, AudioController.AudioChannel channel, bool stopAllMusic)
         {
-            string modSound = SoundpackUtils.GetCustomSound(sound);
-            if (modSound == sound) return true;
+            string notSound = sound.Contains(".") ? sound.Remove(sound.IndexOf('.')) : sound;
+            string modSound = SoundpackUtils.GetCustomSound(notSound);
+            if (notSound == modSound) return true;
 
             if (ApplicationController.ApplicationContext.disableSound)
             {
@@ -38,9 +39,9 @@ namespace SoundpackPatchs
             {
                 __instance.StopMusic();
             }
-            AudioController.AudioTrack audioTrack = new();
+            AudioController.AudioTrack audioTrack = new AudioController.AudioTrack();
             __instance.currentMusicSound = sound;
-            moddedMusic = modSound;
+            if (sound != "") moddedMusic = modSound;
             audioTrack.source = __instance.MusicSource;
             audioTrack.channel = channel;
             if (__instance.MusicTracks.ContainsKey(sound))

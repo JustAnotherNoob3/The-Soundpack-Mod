@@ -32,8 +32,10 @@ namespace Utils
         public static bool targetOnStand = false; // when you are exe.
         public static bool playerOnStand = false; //when you have been voted.
         public static bool prosecutor = false; //if a prosecutor is prosecuting someone.
-        public static List<Role> horsemen = new();
-        public static bool dayOne = false; // if it is day one.
+        public static bool pest = false;
+        public static bool death = false;
+        public static bool war = false;
+        public static bool fam = false;
         public static string directoryPath;
         public static string soundpack;
         public static string curExtension = null;
@@ -46,8 +48,9 @@ namespace Utils
             }
             if (!ModSettings.GetBool("Deactivate Custom Triggers", "JAN.soundpacks") && (ModSettings.GetBool("Allow Custom Triggers SFX", "JAN.soundpacks") || (ogSoundPathNames[1] != "Steps" && ogSoundPathNames[1] != "UI")))
             {
-                if (Pepper.IsGamePhasePlay())
+                if (Leo.IsGameScene() && Pepper.IsGamePhasePlay())
                 {
+                    bool horsemen = pest | war | death | fam;
                     RoleData roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
                     string alignment = roleData.roleAlignment.ToString().ToTitleCase();
                     string subalignment = $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}";
@@ -58,8 +61,8 @@ namespace Utils
                         {
                             return loopString;
                         }
-
-                        if (dayOne && ogSoundPathNames[2] == "DiscussionMusic")
+                        PlayPhase playPhase = Service.Game.Sim.simulation.playPhaseState.Data.playPhase;
+                        if ((playPhase == PlayPhase.FIRST_DISCUSSION || playPhase == PlayPhase.FIRST_DAY) && ogSoundPathNames[2] == "DiscussionMusic")
                         {
                             List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
                             if (modifiers.Contains(Role.FAST_MODE))
@@ -74,7 +77,6 @@ namespace Utils
                             {
                                 gameVelocity = "";
                             }
-                            dayOne = false;
                             string pathToFirstDay = Path.Combine(directoryPath, soundpack, roleFolderName, "Music", "DayOne");
                             string customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
@@ -84,6 +86,10 @@ namespace Utils
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
                             pathToFirstDay = Path.Combine(directoryPath, soundpack, alignment, "Music", "DayOne");
+                            customSoundPath = FindCustomSound(pathToFirstDay);
+                            if (!string.IsNullOrEmpty(customSoundPath))
+                                return customSoundPath;
+                            pathToFirstDay = Path.Combine(directoryPath, soundpack, "Music", "DayOne");
                             customSoundPath = FindCustomSound(pathToFirstDay);
                             if (!string.IsNullOrEmpty(customSoundPath))
                                 return customSoundPath;
@@ -109,7 +115,7 @@ namespace Utils
                                         if (!string.IsNullOrEmpty(customTTSoundPath))
                                             return customTTSoundPath;
                                     }
-                                    if (horsemen.Count > 0)
+                                    if (horsemen)
                                     {
                                         if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                         {
@@ -180,7 +186,7 @@ namespace Utils
                                     if (!string.IsNullOrEmpty(customTTSoundPath))
                                         return customTTSoundPath;
                                 }
-                                if (horsemen.Count > 0)
+                                if (horsemen)
                                 {
                                     if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                     {
@@ -260,7 +266,7 @@ namespace Utils
                                     if (!string.IsNullOrEmpty(customTTSoundPath))
                                         return customTTSoundPath;
                                 }
-                                if (horsemen.Count > 0)
+                                if (horsemen)
                                 {
                                     if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                     {
@@ -329,7 +335,7 @@ namespace Utils
                                 if (!string.IsNullOrEmpty(customTTSoundPath))
                                     return customTTSoundPath;
                             }
-                            if (horsemen.Count > 0)
+                            if (horsemen)
                             {
                                 if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                 {
@@ -402,7 +408,7 @@ namespace Utils
                                     if (!string.IsNullOrEmpty(customTTSoundPath))
                                         return customTTSoundPath;
                                 }
-                                if (horsemen.Count > 0)
+                                if (horsemen)
                                 {
                                     if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                     {
@@ -492,7 +498,7 @@ namespace Utils
                                 if (!string.IsNullOrEmpty(customTTSoundPath))
                                     return customTTSoundPath;
                             }
-                            if (horsemen.Count > 0)
+                            if (horsemen)
                             {
                                 if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                 {
@@ -561,7 +567,7 @@ namespace Utils
                                 if (!string.IsNullOrEmpty(customTTSoundPath))
                                     return customTTSoundPath;
                             }
-                            if (horsemen.Count > 0)
+                            if (horsemen)
                             {
                                 if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                                 {
@@ -629,7 +635,7 @@ namespace Utils
                         if (!string.IsNullOrEmpty(customTTSoundPath))
                             return customTTSoundPath;
                     }
-                    if (horsemen.Count > 0)
+                    if (horsemen)
                     {
                         if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
                         {
@@ -722,9 +728,10 @@ namespace Utils
             {
                 goto CheckExtension;
             }
+
             return files[0];
 
-        CheckExtension:
+CheckExtension:
             if (string.IsNullOrEmpty(curExtension)) return null;
             string extensionPath = soundPath.Replace(soundpack, curExtension);
             dir = Path.GetDirectoryName(extensionPath);
@@ -780,7 +787,6 @@ namespace Utils
             {
                 Directory.CreateDirectory(directoryPath);
             }
-            Debug.Log("Working?");
             string[] fullDirectories = Directory.GetDirectories(directoryPath);
             foreach (string dir in fullDirectories)
             {
@@ -800,16 +806,16 @@ namespace Utils
                 }
             }
             string v = ModSettings.GetString("Selected Soundpack");
-            if (v == "No Soundpack" || !soundpacks.ContainsKey(v)) { soundpack = "No Soundpack"; return; }
+            if (v == "No Soundpack") { soundpack = v; return; }
             string b = soundpacks[v];
             soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
             curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
         }
         public static string FindExtension(string MeWhen)
         {
-            if(!File.Exists(MeWhen)) return null;
+            if (!File.Exists(MeWhen)) return null;
             string file = File.ReadAllText(MeWhen);
-            if(!soundpacks.ContainsKey(file)) return null;
+            if (!soundpacks.ContainsKey(file)) return null;
             string b = soundpacks[file];
             return string.IsNullOrEmpty(b) ? file : Path.Combine(b, file);
         }

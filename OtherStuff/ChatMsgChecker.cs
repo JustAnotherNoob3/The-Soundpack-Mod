@@ -36,7 +36,24 @@ namespace OtherStuff
             {
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)chatLogMessage.chatLogEntry;
                 string msg = entry.messageId.ToString();
-                if (msg.Contains("HAS_EMERGED")) { PlayMusicPatch.moddedMusic = ""; SoundpackUtils.horsemen.Add((Role)Enum.Parse(typeof(Role), msg.Split('_')[0])); SoundpackUtils.loop = false; }
+                if (msg.Contains("HAS_EMERGED")) {
+                    PlayMusicPatch.moddedMusic = "";
+                    switch((Role)Enum.Parse(typeof(Role), msg.Split('_')[0])){
+                        case Role.PESTILENCE:
+                        SoundpackUtils.pest = true;
+                        break;
+                        case Role.DEATH:
+                        SoundpackUtils.death = true;
+                        break;
+                        case Role.FAMINE:
+                        SoundpackUtils.fam = true;
+                        break;
+                        case Role.WAR:
+                        SoundpackUtils.war = true;
+                        break;
+                    } 
+                    SoundpackUtils.loop = false;
+                    }
             }
         }
     }
@@ -46,9 +63,19 @@ namespace OtherStuff
         static public void Prefix(KillRecord killRecord)
         {
             SoundpackUtils.prosecutor = false;
-            if (killRecord.playerRole == Role.FAMINE || killRecord.playerRole == Role.WAR || killRecord.playerRole == Role.PESTILENCE || killRecord.playerRole == Role.DEATH)
-            {
-                SoundpackUtils.horsemen.DeleteAll(killRecord.playerRole);
+            switch(killRecord.playerRole){
+                case Role.PESTILENCE:
+                        SoundpackUtils.pest = false;
+                        break;
+                        case Role.DEATH:
+                        SoundpackUtils.death = false;
+                        break;
+                        case Role.FAMINE:
+                        SoundpackUtils.fam = false;
+                        break;
+                        case Role.WAR:
+                        SoundpackUtils.war = false;
+                        break;
             }
         }
     }
