@@ -806,7 +806,7 @@ CheckExtension:
                 }
             }
             string v = ModSettings.GetString("Selected Soundpack");
-            if (v == "No Soundpack") { soundpack = v; return; }
+            if (v == "No Soundpack" || !soundpacks.ContainsKey(v)) { soundpack = "No Soundpack"; return; }
             string b = soundpacks[v];
             soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
             curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
