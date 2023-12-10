@@ -41,31 +41,14 @@ namespace SoundpackPatchs
             }
             AudioController.AudioTrack audioTrack = new AudioController.AudioTrack();
             __instance.currentMusicSound = sound;
-            if (sound != "") moddedMusic = modSound;
+            if(sound != "")moddedMusic = modSound;
             audioTrack.source = __instance.MusicSource;
             audioTrack.channel = channel;
-            if (__instance.MusicTracks.ContainsKey(sound))
-            {
-                __instance.MusicTracks[sound].source.Stop();
-                __instance.MusicTracks[sound].source.clip = null;
-                __instance.MusicTracks.Remove(sound);
-            }
-            __instance.MusicTracks.Add(sound, audioTrack);
             audioTrack.source.loop = loop;
             audioTrack.source.volume = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicVolume : Service.Home.UserService.Settings.SoundEffectsVolume);
             audioTrack.source.mute = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicMuted : Service.Home.UserService.Settings.SoundEffectsMuted);
-            if (__instance.audioClipCache.ContainsKey(modSound))
-            {
-                audioTrack.source.clip = __instance.audioClipCache[modSound];
-                audioTrack.source.Play();
-                return false;
-            }
-            else
-            {
-                __instance.StartCoroutine(LoadMusicAudioFile(modSound, __instance, audioTrack, sound));
-                return false;
-            }
-
+            __instance.StartCoroutine(LoadMusicAudioFile(modSound, __instance, audioTrack, sound));
+            return false;
         }
         public static IEnumerator LoadMusicAudioFile(string path, AudioController instance, AudioController.AudioTrack audioTrack, string sound)
         {
@@ -76,7 +59,6 @@ namespace SoundpackPatchs
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     AudioClip audioClip = DownloadHandlerAudioClip.GetContent(www);
-                    instance.audioClipCache.Add(path, audioClip);
                     OnMusicAudioClipLoaded(audioClip, instance, audioTrack, sound);
                 }
                 else
