@@ -4,8 +4,9 @@
   "Authors": [
     "JustAnotherNoob"
   ],
-  "Description": "This mod allows for the customization of all music and sounds of the game. Join <color=blue>https://discord.gg/ht8ttc3R8E</color> for a explanation on how soundpacks work.",
-  "Version": "2.0.3",
+  "Description": "This mod allows for the customization of all music and sounds of the game. Join the discord for a explanation on how soundpacks work!",
+  "Version": "2.1.0",
+  "Discord": "https://discord.gg/ht8ttc3R8E",
   "RequiredMods": [],
   "Settings": {
     "CheckboxSettings": [

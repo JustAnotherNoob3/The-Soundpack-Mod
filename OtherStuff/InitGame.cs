@@ -30,6 +30,9 @@ namespace OtherStuff
             SoundpackUtils.draw = false;
             SoundpackUtils.isTT = false;
             SoundpackUtils.loop = false;
+            SoundpackUtils.isNB = false;
+            SoundpackUtils.isTribunal = false;
+            SoundpackUtils.isParty = false;
             if (ModSettings.GetBool("Randomize Soundpacks") && SoundpackUtils.soundpacks.Count > 0)
             {
                 System.Random r = new();

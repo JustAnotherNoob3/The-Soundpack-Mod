@@ -17,9 +17,11 @@ namespace SoundpackPatchs
     public static class PlayMusicPatch
     {
         public static string moddedMusic = "";
+        public static Dictionary<string,AudioClip> memory = new();
         public static bool Prefix(AudioController __instance, string sound, bool loop, AudioController.AudioChannel channel, bool stopAllMusic)
         {
             string notSound = sound.Contains(".") ? sound.Remove(sound.IndexOf('.')) : sound;
+            notSound = notSound.Contains("/") ? notSound : "Audio/BetterTOS2/" + notSound;
             string modSound = SoundpackUtils.GetCustomSound(notSound);
             if (notSound == modSound) return true;
 
@@ -27,8 +29,6 @@ namespace SoundpackPatchs
             {
                 return false;
             }
-            //TODO: check if sound is already playing via singleton instead of IsMusicPlaying() (Only if this doesn't work (Probably won't)).
-            //* nevermind it does, dont check shit.
             if (__instance.IsMusicPlaying(sound) || (moddedMusic == modSound && Pepper.IsGamePhasePlay()))
             {
                 Debug.Log($"{modSound} is already playing.");
@@ -53,12 +53,19 @@ namespace SoundpackPatchs
         public static IEnumerator LoadMusicAudioFile(string path, AudioController instance, AudioController.AudioTrack audioTrack, string sound)
         {
             string extension = path.Substring(path.LastIndexOf('.'));
+            if(memory.ContainsKey(path))
+            {
+                OnMusicAudioClipLoaded(memory[path], instance, audioTrack, sound);
+            } 
+            else 
+            {
             using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, SoundpackUtils.GetAudioType(extension)))
             {
                 yield return www.SendWebRequest();
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     AudioClip audioClip = DownloadHandlerAudioClip.GetContent(www);
+                    memory.Add(path, audioClip);
                     OnMusicAudioClipLoaded(audioClip, instance, audioTrack, sound);
                 }
                 else
@@ -66,6 +73,7 @@ namespace SoundpackPatchs
                     Console.WriteLine("Error al cargar archivo de audio: " + www.error);
                     OnMusicAudioClipLoaded(null, instance, audioTrack, sound);
                 }
+            }
             }
         }
         public static void OnMusicAudioClipLoaded(AudioClip audioClip, AudioController instance, AudioController.AudioTrack audioTrack, string sound)

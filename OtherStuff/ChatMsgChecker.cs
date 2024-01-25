@@ -24,6 +24,7 @@ namespace OtherStuff
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)message.chatLogEntry;
                 if (entry.messageId == GameFeedbackMessage.RAPID_MODE_STARTING) SoundpackUtils.isRapid = true;
                 if (entry.messageId == GameFeedbackMessage.DAYS_LEFT_TO_FIND_TRAITOR) SoundpackUtils.isTT = true;
+                if (entry.messageId == GameFeedbackMessage.SOCIALITE_PARTY) SoundpackUtils.isParty = true;
             }
         }
     }
@@ -105,6 +106,7 @@ namespace OtherStuff
             {
                 SoundpackUtils.prosecutor = message.trialData.IsProsecution();
                 SoundpackUtils.playerOnStand = message.trialData.defendantPosition == Pepper.GetMyPosition();
+                SoundpackUtils.isNB = Service.Game.Cast.GetCharacterByPosition(message.trialData.defendantPosition).characterModel.gender == Gender.Other;
                 SoundpackUtils.targetOnStand = message.trialData.defendantPosition == Service.Game.Sim.info.executionerTargetObservation.Data.targetPosition;
             }
         }
