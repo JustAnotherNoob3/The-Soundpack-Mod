@@ -12,7 +12,7 @@ using System;
 
 namespace SoundpackPatchs
 {
-
+    [HarmonyPriority(2)]
     [HarmonyPatch(typeof(AudioController), "PlayMusic")]
     public static class PlayMusicPatch
     {
