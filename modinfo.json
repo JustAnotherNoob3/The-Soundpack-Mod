@@ -24,8 +24,8 @@
         "AvailableInGame": false
       },
       {
-        "Name": "Allow Random Tracks",
-        "Description": "Allows for the soundpack to use multiple tracks for the same audio.",
+        "Name": "Allow Randomized Tracks",
+        "Description": "Allows for the soundpack to use multiple sounds for the same audio.",
         "DefaultValue": true,
         "AvailableInGame": false
       },
@@ -43,7 +43,7 @@
       },
       {
         "Name": "Allow Custom Triggers SFX",
-        "Description": "Soundpacks are able to modify steps and UI sounds when a folder trigger occurs. <color=yellow>WARNING: this WILL cause major lag spikes if your pc is not high-end.</color>",
+        "Description": "Soundpacks are able to modify steps and UI sounds when a folder trigger occurs.",
         "DefaultValue": false,
         "AvailableInGame": false
       }

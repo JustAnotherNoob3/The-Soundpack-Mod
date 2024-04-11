@@ -38,6 +38,9 @@ namespace OtherStuff
                     case GameFeedbackMessage.BEING_DUELED:
                     SoundpackUtils.isDueled = true;
                     break;
+                    case GameFeedbackMessage.LYNCHED_JESTER:
+                    SoundpackUtils.isHaunt = true;
+                    break;
                 }
             }
         }

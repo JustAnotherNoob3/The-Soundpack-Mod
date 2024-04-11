@@ -43,6 +43,7 @@ public static partial class SoundpackUtils
     public static bool death = false;
     public static bool war = false;
     public static bool fam = false;
+    public static bool isHaunt = false;
     public static string directoryPath;
     public static string soundpack;
     public static string curExtension = null;
@@ -223,7 +224,8 @@ public static partial class SoundpackUtils
     {
         customTriggers.AddRange([
             new CustomTrigger(() => "DrawMusic", CustomTrigger.Type.Name, (s) => draw && s[2] == "CovenVictory"),
-                new CustomTrigger(() => {if(win) return "VictoryMusic"; return "DefeatMusic";}, CustomTrigger.Type.Name, (s) => s[2] == "LoginMusicLoop_old")
+            new CustomTrigger(() => "RankedBell", CustomTrigger.Type.Name, (s) => s[2] == "TownBellRing"),
+            new CustomTrigger(() => {if(win) return "VictoryMusic"; return "DefeatMusic";}, CustomTrigger.Type.Name, (s) => s[2] == "LoginMusicLoop_old")
         ]);
     }
     static void PrepareVelocityTriggers()
@@ -235,11 +237,13 @@ public static partial class SoundpackUtils
                 new CustomTrigger(()=>"Target", CustomTrigger.Type.Prefix, (s) => roleData.role == Role.EXECUTIONER && targetOnStand && Pepper.AmIAlive())
             ], (s)=>s[2] == "Judgement"),
             new GroupTriggers([
-                new CustomTrigger(() => "PartyMusic", CustomTrigger.Type.Name, (s) => isParty),
-                new CustomTrigger(() => "JailedMusic", CustomTrigger.Type.Name, (s) => isJailed,callback: () => {isJailed = false;}),
-                new CustomTrigger(() => "DueledMusic", CustomTrigger.Type.Name, (s) => isDueled,callback: () => {isDueled = false;})
+                new CustomTrigger(() => "PartyMusic", CustomTrigger.Type.Name, (s) => isParty, worksWithOthers: true),
+                new CustomTrigger(() => "JailedMusic", CustomTrigger.Type.Name, (s) => isJailed, callback: () => {isJailed = false;}, worksWithOthers: true),
+                new CustomTrigger(() => "DueledMusic", CustomTrigger.Type.Name, (s) => isDueled, callback: () => {isDueled = false;}, worksWithOthers: true),
+                new CustomTrigger(() => "Haunt", CustomTrigger.Type.Prefix, (s) => isHaunt, worksWithOthers: true)
             ], (s) => s[2] == "NightMusic", callback: () => {isTribunal = false;}),
-            new CustomTrigger(()=>"TribunalMusic", CustomTrigger.Type.Name, (s) => s[2] == "VotingMusic" && isTribunal)
+            new CustomTrigger(()=>"TribunalMusic", CustomTrigger.Type.Name, (s) => s[2] == "VotingMusic" && isTribunal),
+            new CustomTrigger(()=>"DiscussionMusic", CustomTrigger.Type.Name, (s) => s[2] == "DiscussionMusic",callback:() => {isHaunt = false;})
         ]);
     }
     static void PrepareGameplayTriggers()
@@ -271,12 +275,16 @@ public static partial class SoundpackUtils
                         }, CustomTrigger.Type.Folder, (s) => true),
                     new CustomTrigger(() => "TransformedHorseman", CustomTrigger.Type.Folder, (s) => true)
                 ], (s) => Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE),
+                new CustomTrigger(() => "HorsemanDeath", CustomTrigger.Type.Folder, (s) => death),
+                new CustomTrigger(() => "HorsemanFamine", CustomTrigger.Type.Folder, (s) => fam),
+                new CustomTrigger(() => "HorsemanWar", CustomTrigger.Type.Folder, (s) => war),
+                new CustomTrigger(() => "HorsemanPestilence", CustomTrigger.Type.Folder, (s) => pest),
                 new CustomTrigger(() => "Horsemen", CustomTrigger.Type.Folder, (s) => true)
             ],(s) => pest || war || death || fam),
             new CustomTrigger(() => "Dead", CustomTrigger.Type.Folder, (s) => !Pepper.AmIAlive()),
-            new CustomTrigger(() => alignment, CustomTrigger.Type.Folder, (s) => true),
+            new CustomTrigger(() => roleData.roleName, CustomTrigger.Type.Folder, (s) => true),
             new CustomTrigger(() => $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}", CustomTrigger.Type.Folder, (s) => true),
-            new CustomTrigger(() => roleData.roleName, CustomTrigger.Type.Folder, (s) => true)
+            new CustomTrigger(() => alignment, CustomTrigger.Type.Folder, (s) => true)
         ]);
     }
     static void PrepareTriggers()
@@ -331,6 +339,7 @@ public static partial class SoundpackUtils
             p.StopMusic();
             p.PlayMusic($"Audio/Music/{cuMusic}"); return;
         }
+        Debug.LogWarning($"Setting Soundpack: \"{selection}\" from soundpacks {string.Join(", ", soundpacks)}");
         Debug.LogWarning(soundpacks.TryGetValue(selection, out string llll));
 
         Debug.Log(llll);
