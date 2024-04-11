@@ -1,5 +1,9 @@
 using UnityEngine;
 using System.Collections;
+using System;
+using System.Reflection;
+using HarmonyLib;
+using System.Collections.Generic;
 
 namespace Utils{
     class MiscUtils{
@@ -18,7 +22,17 @@ namespace Utils{
      }
      return path;
     }
-    
+    public static int ReverseBits(int num, int bitCount)
+    {
+        int result = 0;
+        for (int i = 0; i < bitCount; i++)
+        {
+            result <<= 1;
+            result |= (num & 1);
+            num >>= 1;
+        }
+        return result;
+    }
     
     }
 
@@ -52,4 +66,60 @@ public class PauseScript : MonoBehaviour
         }
     }
 }
+public class SoundpacksDebugger : MonoBehaviour {
+    public Type targetType = typeof(SoundpackUtils);
+    public List<object> objects;
+    public static SoundpacksDebugger Instance;
+    public static SoundpacksDebugger GetInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("PauseScript");
+            Instance = go.AddComponent<SoundpacksDebugger>();
+            DontDestroyOnLoad(go);
+        }
+        return Instance;
+    }
+    public void Start()
+    {
+        AddFieldsAsComponents();
+    }
+
+    public void AddFieldsAsComponents()
+    {
+        // Get all the public fields from the target type
+        objects = [];
+        
+        FieldInfo[] fields = targetType.GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        foreach (FieldInfo field in fields)
+        {
+            objects.Add(field.GetValue(null));
+        }
+
+        
+    }
+    public void Update()
+    {
+        if(!Input.GetKeyDown(KeyCode.Space)) return;
+        AddFieldsAsComponents();
+    }
+}
+
+
+public class Pair<T, U> {
+    public Pair() {
+    }
+
+    public Pair(T key, U value) {
+        this.Key = key;
+        this.Value = value;
+    }
+    public void SetValues(T key, U value){
+        this.Key = key;
+        this.Value = value;
+    }
+    public T Key { get; set; }
+    public U Value { get; set; }
+};
 }

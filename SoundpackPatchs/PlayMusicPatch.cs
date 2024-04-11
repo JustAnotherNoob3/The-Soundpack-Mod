@@ -23,8 +23,10 @@ namespace SoundpackPatchs
             string notSound = sound.Contains(".") ? sound.Remove(sound.IndexOf('.')) : sound;
             notSound = notSound.Contains("/") ? notSound : "Audio/BetterTOS2/" + notSound;
             string modSound = SoundpackUtils.GetCustomSound(notSound);
-            if (notSound == modSound) return true;
-
+            if (string.IsNullOrEmpty(modSound) || modSound == notSound)
+            {
+                return true;
+            }
             if (ApplicationController.ApplicationContext.disableSound)
             {
                 return false;
@@ -45,8 +47,8 @@ namespace SoundpackPatchs
             audioTrack.source = __instance.MusicSource;
             audioTrack.channel = channel;
             audioTrack.source.loop = loop;
-            audioTrack.source.volume = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicVolume : Service.Home.UserService.Settings.SoundEffectsVolume);
-            audioTrack.source.mute = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicMuted : Service.Home.UserService.Settings.SoundEffectsMuted);
+            audioTrack.source.volume = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicVolume : ((channel == AudioController.AudioChannel.Cinematic) ? Service.Home.UserService.Settings.CinematicAudioVolume : Service.Home.UserService.Settings.SoundEffectsVolume));
+		    audioTrack.source.mute = ((channel == AudioController.AudioChannel.Music) ? Service.Home.UserService.Settings.MusicMuted : ((channel == AudioController.AudioChannel.Cinematic) ? Service.Home.UserService.Settings.CinematicAudioMuted : Service.Home.UserService.Settings.SoundEffectsMuted));
             __instance.StartCoroutine(LoadMusicAudioFile(modSound, __instance, audioTrack, sound));
             return false;
         }
@@ -85,6 +87,7 @@ namespace SoundpackPatchs
                 {
                     audioTrack.source.clip = audioClip;
                     audioTrack.source.Play();
+                    Service.Home.AudioService.PurgeMusicClips(sound);
                     return;
                 }
             }

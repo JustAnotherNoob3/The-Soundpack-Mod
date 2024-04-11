@@ -22,9 +22,23 @@ namespace OtherStuff
             if (message.chatLogEntry.type == ChatType.GAME_MESSAGE)
             {
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)message.chatLogEntry;
-                if (entry.messageId == GameFeedbackMessage.RAPID_MODE_STARTING) SoundpackUtils.isRapid = true;
-                if (entry.messageId == GameFeedbackMessage.DAYS_LEFT_TO_FIND_TRAITOR) SoundpackUtils.isTT = true;
-                if (entry.messageId == GameFeedbackMessage.SOCIALITE_PARTY) SoundpackUtils.isParty = true;
+                switch(entry.messageId){
+                    case GameFeedbackMessage.RAPID_MODE_STARTING:
+                    SoundpackUtils.isRapid = true;
+                    break;
+                    case GameFeedbackMessage.DAYS_LEFT_TO_FIND_TRAITOR:
+                    SoundpackUtils.isTT = true;
+                    break;
+                    case GameFeedbackMessage.SOCIALITE_PARTY:
+                    SoundpackUtils.isParty = true;
+                    break;
+                    case GameFeedbackMessage.BEING_JAILED:
+                    SoundpackUtils.isJailed = true;
+                    break;
+                    case GameFeedbackMessage.BEING_DUELED:
+                    SoundpackUtils.isDueled = true;
+                    break;
+                }
             }
         }
     }
@@ -37,24 +51,27 @@ namespace OtherStuff
             {
                 ChatLogGameMessageEntry entry = (ChatLogGameMessageEntry)chatLogMessage.chatLogEntry;
                 string msg = entry.messageId.ToString();
-                if (msg.Contains("HAS_EMERGED")) {
+                if (msg.Contains("HAS_EMERGED"))
+                {
                     PlayMusicPatch.moddedMusic = "";
-                    switch((Role)Enum.Parse(typeof(Role), msg.Split('_')[0])){
+                    switch ((Role)Enum.Parse(typeof(Role), msg.Split('_')[0]))
+                    {
                         case Role.PESTILENCE:
-                        SoundpackUtils.pest = true;
-                        break;
+                            SoundpackUtils.pest = true;
+                            break;
                         case Role.DEATH:
-                        SoundpackUtils.death = true;
-                        break;
+                            SoundpackUtils.death = true;
+                            break;
                         case Role.FAMINE:
-                        SoundpackUtils.fam = true;
-                        break;
+                            SoundpackUtils.fam = true;
+                            break;
                         case Role.WAR:
-                        SoundpackUtils.war = true;
-                        break;
-                    } 
-                    SoundpackUtils.loop = false;
+                            SoundpackUtils.war = true;
+                            break;
                     }
+                    SoundpackUtils.loop = false;
+                }
+
             }
         }
     }
@@ -64,19 +81,20 @@ namespace OtherStuff
         static public void Prefix(KillRecord killRecord)
         {
             SoundpackUtils.prosecutor = false;
-            switch(killRecord.playerRole){
+            switch (killRecord.playerRole)
+            {
                 case Role.PESTILENCE:
-                        SoundpackUtils.pest = false;
-                        break;
-                        case Role.DEATH:
-                        SoundpackUtils.death = false;
-                        break;
-                        case Role.FAMINE:
-                        SoundpackUtils.fam = false;
-                        break;
-                        case Role.WAR:
-                        SoundpackUtils.war = false;
-                        break;
+                    SoundpackUtils.pest = false;
+                    break;
+                case Role.DEATH:
+                    SoundpackUtils.death = false;
+                    break;
+                case Role.FAMINE:
+                    SoundpackUtils.fam = false;
+                    break;
+                case Role.WAR:
+                    SoundpackUtils.war = false;
+                    break;
             }
         }
     }
@@ -108,6 +126,7 @@ namespace OtherStuff
                 SoundpackUtils.playerOnStand = message.trialData.defendantPosition == Pepper.GetMyPosition();
                 SoundpackUtils.isNB = Service.Game.Cast.GetCharacterByPosition(message.trialData.defendantPosition).characterModel.gender == Gender.Other;
                 SoundpackUtils.targetOnStand = message.trialData.defendantPosition == Service.Game.Sim.info.executionerTargetObservation.Data.targetPosition;
+
             }
         }
     }

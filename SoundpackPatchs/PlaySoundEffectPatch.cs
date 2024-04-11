@@ -24,7 +24,7 @@ namespace SoundpackPatchs
                 return true;
             }
             string modSound = SoundpackUtils.GetCustomSound(notSound);
-            if (notSound == modSound)
+            if (string.IsNullOrEmpty(modSound) || modSound == notSound)
             {
                 return true;
             }
@@ -32,16 +32,15 @@ namespace SoundpackPatchs
             {
                 return false;
             }
-            __instance.StartCoroutine(LoadSoundEffectAudioFile(modSound, randomizePitch, minPitch, maxPitch, __instance));
+            if(memory.TryGetValue(modSound, out AudioClip clip)){
+                OnSoundEffectAudioClipLoaded(clip, randomizePitch, minPitch, maxPitch, __instance);
+            }
+            else __instance.StartCoroutine(LoadSoundEffectAudioFile(modSound, randomizePitch, minPitch, maxPitch, __instance));
             return false;
         }
         public static IEnumerator LoadSoundEffectAudioFile(string path, bool randomizePitch, float minPitch, float maxPitch, AudioController instance)
         {
             string extension = path.Substring(path.LastIndexOf('.'));
-            if (memory.ContainsKey(path))
-            {
-                OnSoundEffectAudioClipLoaded(memory[path], randomizePitch, minPitch, maxPitch, instance);
-            }
             using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, SoundpackUtils.GetAudioType(extension)))
             {
                 yield return www.SendWebRequest();

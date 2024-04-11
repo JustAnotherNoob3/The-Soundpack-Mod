@@ -5,7 +5,7 @@
     "JustAnotherNoob"
   ],
   "Description": "This mod allows for the customization of all music and sounds of the game. Join the discord for a explanation on how soundpacks work!",
-  "Version": "2.1.0",
+  "Version": "3.0.0",
   "Discord": "https://discord.gg/ht8ttc3R8E",
   "RequiredMods": [],
   "Settings": {
@@ -20,6 +20,12 @@
       {
         "Name": "Looping Rapid Mode",
         "Description": "Allows for the file RapidModeLooping to be in a constant loop while game is in rapid mode.",
+        "DefaultValue": true,
+        "AvailableInGame": false
+      },
+      {
+        "Name": "Allow Random Tracks",
+        "Description": "Allows for the soundpack to use multiple tracks for the same audio.",
         "DefaultValue": true,
         "AvailableInGame": false
       },

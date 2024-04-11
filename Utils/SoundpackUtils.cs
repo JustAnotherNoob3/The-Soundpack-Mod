@@ -7,655 +7,530 @@ using SML;
 using System.Collections.Generic;
 using Server.Shared.Extensions;
 using System;
-using System.Net.Sockets;
 using System.Linq;
-using System.Runtime.CompilerServices;
-namespace Utils
+using Home.Shared;
+using Game.Decorations;
+using System.Collections.ObjectModel;
+namespace Utils;
+
+public static partial class SoundpackUtils
 {
-    public class SoundpackUtils
-    {
-        static private string[] toCheck { get; } = {
+    public static List<CustomTrigger> customTriggers = new();
+    public static List<CustomTrigger> customGameplayTriggers = new();
+    public static List<CustomTrigger> customVelocityTriggers = new();
+    public static List<CustomTrigger> customFolderTriggers = new();
+    public static List<CustomTrigger> flattenedList = new();
+    static private string[] toCheck { get; } = {
             "UI",
             "Steps",
             "Sfx",
             "Music",
             "Cauldron"
         };
-        public static List<string> subfolders = new();
-        public static Dictionary<string, string> soundpacks = new();
-        public static bool draw = false;
-        public static bool win = false;
-        public static bool loop = false;
-        public static bool isRapid = false;
-        public static bool isTT = false;
-        public static string gameVelocity = "";
-        public static string loopString = "";
-        public static bool targetOnStand = false; // when you are exe.
-        public static bool playerOnStand = false; //when you have been voted.
-        public static bool prosecutor = false; //if a prosecutor is prosecuting someone.
-        public static bool pest = false;
-        public static bool death = false;
-        public static bool war = false;
-        public static bool fam = false;
-        public static string directoryPath;
-        public static string soundpack;
-        public static string curExtension = null;
-        public static bool isTribunal = false;
-        public static bool isParty = false;
-        public static bool isNB = false;
-        public static string GetCustomSoundRework(string ogSoundPath)
+    public static List<string> subfolders = new();
+    public static Dictionary<string, string> soundpacks = new();
+    public static bool draw = false;
+    public static bool win = false;
+    public static bool loop = false;
+    public static bool isRapid = false;
+    public static bool isTT = false;
+    public static string gameVelocity = "";
+    public static string loopString = "";
+    public static bool targetOnStand = false; // when you are exe.
+    public static bool playerOnStand = false; //when you have been voted.
+    public static bool prosecutor = false; //if a prosecutor is prosecuting someone.
+    public static bool pest = false;
+    public static bool death = false;
+    public static bool war = false;
+    public static bool fam = false;
+    public static string directoryPath;
+    public static string soundpack;
+    public static string curExtension = null;
+    public static bool isTribunal = false;
+    public static bool isParty = false;
+    public static bool isNB = false;
+    public static RoleData roleData;
+    public static string alignment;
+    public static Pair<List<string>, string> cachedSound = new(new(), "");
+    public static bool isJailed = false;
+    public static bool isDueled = false;
+    public static string GetCustomSound(string ogSoundPath)
+    {
+
+        List<string> ogSoundPathNames = [.. ogSoundPath.Split('/')];
+        if (!Directory.Exists(Path.Combine(directoryPath, soundpack, ogSoundPathNames[1])))
         {
             return ogSoundPath;
         }
-        public static string GetCustomSound(string ogSoundPath)
+        if (!ModSettings.GetBool("Deactivate Custom Triggers", "JAN.soundpacks") && (ModSettings.GetBool("Allow Custom Triggers SFX", "JAN.soundpacks") || (ogSoundPathNames[1] != "Steps" && ogSoundPathNames[1] != "UI")))
         {
-
-            string[] ogSoundPathNames = ogSoundPath.Split('/');
-            if (!Directory.Exists(Path.Combine(directoryPath, soundpack, ogSoundPathNames[1])))
+            if (Leo.IsGameScene() && Pepper.IsGamePhasePlay())
             {
-                return ogSoundPath;
-            }
-            if (!ModSettings.GetBool("Deactivate Custom Triggers", "JAN.soundpacks") && (ModSettings.GetBool("Allow Custom Triggers SFX", "JAN.soundpacks") || (ogSoundPathNames[1] != "Steps" && ogSoundPathNames[1] != "UI")))
-            {
-                if (Leo.IsGameScene() && Pepper.IsGamePhasePlay())
+                flattenedList = customFolderTriggers.Flat();
+                roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
+                alignment = roleData.roleAlignment.ToString().ToTitleCase();
+                if (ogSoundPathNames[1] == "Music")
                 {
-                    bool horsemen = pest | war | death | fam;
-                    RoleData roleData = RoleExtensions.GetRoleData(Pepper.GetMyRole());
-                    if (ogSoundPathNames[1] == "Music")
+                    if (loop)
                     {
-                        if (loop)
+                        return loopString;
+                    }
+                    PlayPhase playPhase = Service.Game.Sim.simulation.playPhaseState.Data.playPhase;
+                    if ((playPhase == PlayPhase.FIRST_DISCUSSION || playPhase == PlayPhase.FIRST_DAY) && ogSoundPathNames[2] == "DiscussionMusic")
+                    {
+                        List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
+                        if (modifiers.Contains(Role.FAST_MODE))
                         {
-                            return loopString;
+                            gameVelocity += "FastMode";
                         }
-                        PlayPhase playPhase = Service.Game.Sim.simulation.playPhaseState.Data.playPhase;
-                        if ((playPhase == PlayPhase.FIRST_DISCUSSION || playPhase == PlayPhase.FIRST_DAY) && ogSoundPathNames[2] == "DiscussionMusic")
+                        else if (modifiers.Contains(Role.SLOW_MODE))
                         {
-                            List<Role> modifiers = Service.Game.Sim.simulation.roleDeckBuilder.Data.modifierCards;
-                            if (modifiers.Contains(Role.FAST_MODE))
-                            {
-                                gameVelocity += "FastMode";
-                            }
-                            else if (modifiers.Contains(Role.SLOW_MODE))
-                            {
-                                gameVelocity += "SlowMode";
-                            }
-                            else
-                            {
-                                gameVelocity = "";
-                            }
-                            string pathToFirstDay = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "DayOne"), roleData) ;
-
-                            if (!string.IsNullOrEmpty(pathToFirstDay))
-                                return pathToFirstDay;
+                            gameVelocity += "SlowMode";
                         }
-
-                        if (ogSoundPathNames[2] == "Judgement")
+                        else
                         {
-                            if (prosecutor)
-                            {
-                                if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
-                                {
-                                    string pathToTargetPros = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2] + "Prosecutor");
-                                    string customSoundPath = FindCustomSound(pathToTargetPros);
-                                    if (!string.IsNullOrEmpty(customSoundPath))
-                                        return customSoundPath;
-                                }
-                                else if (playerOnStand)
-                                {
-                                    if (isTT)
-                                    {
-                                        string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor");
-                                        string customTTSoundPath = FindCustomSound(pathToTT);
-                                        if (!string.IsNullOrEmpty(customTTSoundPath))
-                                            return customTTSoundPath;
-                                    }
-                                    if (horsemen)
-                                    {
-                                        string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "PlayerJudgementProsecutor"), roleData);
-                                        if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                                            return pathToMeHorsemenVelocitySounds;
-                                    }
-                                    string pathToTargetPlayer = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2] + "Prosecutor"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToTargetPlayer))
-                                        return pathToTargetPlayer;
-                                }
-                                if (isTT)
-                                {
-                                    string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "JudgementProsecutor"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                                        return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToTarget = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], ogSoundPathNames[2] + "Prosecutor"), roleData);
-                                if (!string.IsNullOrEmpty(pathToTarget))
-                                    return pathToTarget;
-                            }
-                            if (Pepper.GetMyRole() == Role.EXECUTIONER && targetOnStand)
-                            {
-                                string pathToTarget = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Executioner")).Replace(ogSoundPathNames[2], "Target" + ogSoundPathNames[2]);
-                                string customTargetSoundPath = FindCustomSound(pathToTarget);
-                                if (!string.IsNullOrEmpty(customTargetSoundPath))
-                                    return customTargetSoundPath;
-                            }
-                            else if (playerOnStand)
-                            {
-                                if (isTT)
-                                {
-                                    string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]);
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "PlayerJudgement"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                                        return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToTarget = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "Player" + ogSoundPathNames[2]), roleData);
-                                if (!string.IsNullOrEmpty(pathToTarget))
-                                    return pathToTarget;
-                            }
-                            if (isTT)
-                            {
-                                string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor"));
-                                string customTTSoundPath = FindCustomSound(pathToTT);
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
-                            }
-                            if (horsemen)
-                            {
-                                string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "Judgement"), roleData);
-                                if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                                    return pathToMeHorsemenVelocitySounds;
-                            }
-                            string pathToSound = FindNormalPath(ogSoundPath, roleData);
-                            if (!string.IsNullOrEmpty(pathToSound))
-                                return pathToSound;
+                            gameVelocity = "";
                         }
-                        if (ogSoundPathNames[2] == "NightMusic")
+                        List<string> pathToRapidLooping = ["Audio", "Music", "DayOne"];
+                        foreach (CustomTrigger x in flattenedList)
                         {
-                            isTribunal = false;
-                            if(isParty){
-                            isParty = false;
-                            if (isRapid)
-                            {
-                                if (isTT)
-                                {
-                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidModePartyMusic");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "RapidModePartyMusic"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToASound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "RapidModePartyMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToASound))
-                                    return pathToASound;
-                            }
-                            else if (!string.IsNullOrEmpty(gameVelocity))
-                            {
-                                if (isTT)
-                                {
-                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", gameVelocity + "PartyMusic");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", gameVelocity + "PartyMusic"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToASound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], gameVelocity + "PartyMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToASound))
-                                    return pathToASound;
-                            }
-                            if (isTT)
-                            {
-                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "PartyMusic");
-                                string customTTSoundPath = FindCustomSound(pathToTT);
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
-                            }
-                            if (horsemen)
-                            {
-                                string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "PartyMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                            }
-                            string pathToSound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "PartyMusic"), roleData);
-                            if (!string.IsNullOrEmpty(pathToSound))
-                                return pathToSound;
+                            if (FindCustomSound(x.GetPath(pathToRapidLooping))) return cachedSound.Value;
                         }
-                        
-                        }
-                        if (ogSoundPathNames[2] == "VotingMusic" && isTribunal) //bro making this one was fast af.
+                        if (FindCustomSound(pathToRapidLooping)) return cachedSound.Value;
+                    }
+                    if (isRapid)
+                    {
+                        if (ModSettings.GetBool("Looping Rapid Mode"))
                         {
-                            isTribunal = false;
-                            if (isRapid)
+                            List<string> pathToRapidLooping = ["Audio", "Music", "RapidModeLooping"];
+                            foreach (CustomTrigger x in flattenedList)
                             {
-                                if (isTT)
-                                {
-                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidModeTribunalMusic");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "RapidModeTribunalMusic"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToASound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "RapidModeTribunalMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToASound))
-                                    return pathToASound;
-                            }
-                            else if (!string.IsNullOrEmpty(gameVelocity))
-                            {
-                                if (isTT)
-                                {
-                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", gameVelocity + "TribunalMusic");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                        return customTTSoundPath;
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", gameVelocity + "TribunalMusic"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                                }
-                                string pathToASound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], gameVelocity + "TribunalMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToASound))
-                                    return pathToASound;
-                            }
-                            if (isTT)
-                            {
-                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "TribunalMusic");
-                                string customTTSoundPath = FindCustomSound(pathToTT);
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
-                            }
-                            if (horsemen)
-                            {
-                                string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "TribunalMusic"), roleData);
-                                if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                            }
-                            string pathToSound = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "TribunalMusic"), roleData);
-                            if (!string.IsNullOrEmpty(pathToSound))
-                                return pathToSound;
-                        }
-                        if (isRapid)
-                        {
-                            if (ModSettings.GetBool("Looping Rapid Mode"))
-                            {
-                                if (isTT)
-                                {
-                                    string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidModeLooping");
-                                    string customTTSoundPath = FindCustomSound(pathToTT);
-                                    if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    { loop = true; loopString = customTTSoundPath; return customTTSoundPath; }
-                                }
-                                if (horsemen)
-                                {
-                                    string pathToMeHorsemenVelocitySounds = GetHorsemenString(Path.Combine(directoryPath, soundpack, "XROLE", "Music", "RapidModeLooping"), roleData);
-                                    if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                                    {
-                                        loop = true;
-                                        loopString = pathToMeHorsemenVelocitySounds;
-                                        return pathToMeHorsemenVelocitySounds;
-                                    }
-                                }
-                                string pathToCustomRapidSounds = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "RapidModeLooping"), roleData);
-                                if (!string.IsNullOrEmpty(pathToCustomRapidSounds))
+                                if (FindCustomSound(x.GetPath(pathToRapidLooping)))
                                 {
                                     loop = true;
-                                    loopString = pathToCustomRapidSounds;
-                                    return pathToCustomRapidSounds;
+                                    loopString = cachedSound.Value;
+                                    return cachedSound.Value;
                                 }
                             }
-                            if (isTT)
+                            if (FindCustomSound(pathToRapidLooping))
                             {
-                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", "RapidMode" + ogSoundPathNames[2]);
-                                string customTTSoundPath = FindCustomSound(pathToTT);
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
+                                loop = true;
+                                loopString = cachedSound.Value;
+                                return cachedSound.Value;
                             }
-                            if (horsemen)
-                            {
-                                string pathToMeHorsemenVelocitySounds = GetHorsemenString(ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "XROLE")).Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]), roleData);
-                                if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                            }
-                            string pathToCustomVelocitySounds = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], "RapidMode" + ogSoundPathNames[2]), roleData);
-                            if (!string.IsNullOrEmpty(pathToCustomVelocitySounds)) return pathToCustomVelocitySounds;
                         }
-                        else if (!string.IsNullOrEmpty(gameVelocity))
+                        List<string> rapidList = ogSoundPathNames.ShallowCopy();
+                        if (customVelocityTriggers.Resolve(rapidList, true, "RapidMode")) return cachedSound.Value;
+                        rapidList[2] = "RapidMode" + rapidList[2];
+                        foreach (CustomTrigger x in flattenedList)
                         {
-                            if (isTT)
-                            {
-                                string pathToTT = Path.Combine(directoryPath, soundpack, "Town Traitor", "Music", gameVelocity + ogSoundPathNames[2]);
-                                string customTTSoundPath = FindCustomSound(pathToTT);
-                                if (!string.IsNullOrEmpty(customTTSoundPath))
-                                    return customTTSoundPath;
-                            }
-                            if (horsemen)
-                            {
-                                string pathToMeHorsemenVelocitySounds = GetHorsemenString(ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "XROLE")).Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]), roleData);
-                                if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds)) return pathToMeHorsemenVelocitySounds;
-                            }
-                            string pathToCustomVelocitySounds = FindNormalPath(ogSoundPath.Replace(ogSoundPathNames[2], gameVelocity + ogSoundPathNames[2]), roleData);
-                            if (!string.IsNullOrEmpty(pathToCustomVelocitySounds)) return pathToCustomVelocitySounds;
+                            if (FindCustomSound(x.GetPath(rapidList))) return cachedSound.Value;
                         }
-
+                        if (FindCustomSound(rapidList)) return cachedSound.Value;
                     }
-                    if (isNB && ogSoundPath.Contains("Male"))
+                    else if (!string.IsNullOrEmpty(gameVelocity))
                     {
-                        isNB = false;
-                        if (isTT)
+                        List<string> velocityList = ogSoundPathNames.ShallowCopy();
+                        if (customVelocityTriggers.Resolve(velocityList, true, gameVelocity)) return cachedSound.Value;
+                        foreach (CustomTrigger x in flattenedList)
                         {
-                            string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor")).Replace("Male","NonBinary");
-                            string customTTSoundPath = FindCustomSound(pathToTT);
-                            if (!string.IsNullOrEmpty(customTTSoundPath))
-                                return customTTSoundPath;
+                            if (FindCustomSound(x.GetPath(velocityList))) return cachedSound.Value;
                         }
-                        if (horsemen)
-                        {
-                            string pathToMeHorsemenVelocitySounds = GetHorsemenString(ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "XROLE")).Replace("Male","NonBinary"), roleData);
-                            if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                            {
-                                return pathToMeHorsemenVelocitySounds;
-                            }
-                        }
-                        string pathToSound = FindNormalPath(ogSoundPath.Replace("Male","NonBinary"), roleData);
-                        if (!string.IsNullOrEmpty(pathToSound))
-                        return pathToSound;
-                    }
-                    if (isTT)
-                    {
-                        string pathToTT = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "Town Traitor"));
-                        string customTTSoundPath = FindCustomSound(pathToTT);
-                        if (!string.IsNullOrEmpty(customTTSoundPath))
-                            return customTTSoundPath;
-                    }
-                    if (horsemen)
-                    {
-                        string pathToMeHorsemenVelocitySounds = GetHorsemenString(ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, "XROLE")), roleData);
-                        if (!string.IsNullOrEmpty(pathToMeHorsemenVelocitySounds))
-                        {
-                            return pathToMeHorsemenVelocitySounds;
-                        }
-                    }
-                    string pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleData.roleName));
-                    string customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-                    string alignment = roleData.roleAlignment.ToString().ToTitleCase();
-                    pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}"));
-                    customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-                    pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
-                    customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-                    if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-                }
-                if (draw && ogSoundPathNames[2] == "CovenVictory")
-                {
-                    draw = false;
-                    string pathToCustomDrawMusic = Path.Combine(directoryPath, soundpack, "Music", "DrawMusic");
-                    string customDrawMusicPath = FindCustomSound(pathToCustomDrawMusic);
-                    if (!string.IsNullOrEmpty(customDrawMusicPath)) return customDrawMusicPath;
-                }
-                if (ogSoundPathNames[2] == "LoginMusicLoop_old")
-                {
-                    if (win)
-                    {
-                        string pathToCustomWin = Path.Combine(directoryPath, soundpack, "Music", "VictoryMusic");
-                        string customWinMusicPath = FindCustomSound(pathToCustomWin);
-                        if (!string.IsNullOrEmpty(customWinMusicPath)) return customWinMusicPath;
-                    }
-                    else
-                    {
-                        string pathToCustomWin = Path.Combine(directoryPath, soundpack, "Music", "DefeatMusic");
-                        string customWinMusicPath = FindCustomSound(pathToCustomWin);
-                        if (!string.IsNullOrEmpty(customWinMusicPath)) return customWinMusicPath;
+                        if (FindCustomSound(velocityList)) return cachedSound.Value;
                     }
                 }
-            }
-            string pathToCustomSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack));
-            string customPath = FindCustomSound(pathToCustomSounds);
-            if (!string.IsNullOrEmpty(customPath)) return customPath; else return ogSoundPath;
-        }
-        static string FindNormalPath(string ogSoundPath, RoleData roleData)
-        {
-            string alignment = roleData.roleAlignment.ToString().ToTitleCase();
-            string subalignment = $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}";
-            string roleFolderName = roleData.roleName;
-            string pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, roleFolderName));
-            string customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-            if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-            pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, subalignment));
-            customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-            if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-            pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack, alignment));
-            customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-            if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-            pathToRoleSounds = ogSoundPath.Replace("Audio", Path.Combine(directoryPath, soundpack));
-            customRoleSoundPath = FindCustomSound(pathToRoleSounds);
-            if (!string.IsNullOrEmpty(customRoleSoundPath)) return customRoleSoundPath;
-            return null;
-        }
-        static string GetHorsemenString(string path, RoleData roleData)
-        {
-            if (Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE)
-            {
-                string horsemenString = path;
-                switch (roleData.role)
+                List<string> gameplayList = ogSoundPathNames.ShallowCopy();
+                if (customGameplayTriggers.Resolve(gameplayList, true, null)) return cachedSound.Value;
+                foreach (CustomTrigger x in flattenedList)
                 {
-                    case Role.SOULCOLLECTOR:
-                        horsemenString = path.Replace("XROLE", "Death");
-                        break;
-                    case Role.BERSERKER:
-                        horsemenString = path.Replace("XROLE", "War");
-                        break;
-                    case Role.PLAGUEBEARER:
-                        horsemenString = path.Replace("XROLE", "Pestilence");
-                        break;
-                    case Role.BAKER:
-                        horsemenString = path.Replace("XROLE", "Famine");
-                        break;
+                    if (FindCustomSound(x.GetPath(gameplayList))) return cachedSound.Value;
                 }
-                string customMeHorsemenVelocitySoundsPath = FindCustomSound(horsemenString);
-                if (!string.IsNullOrEmpty(customMeHorsemenVelocitySoundsPath))
-                {
-                    return customMeHorsemenVelocitySoundsPath;
-                }
-                horsemenString = path.Replace("XROLE", "TransformedHorsemen");
-                customMeHorsemenVelocitySoundsPath = FindCustomSound(horsemenString);
-                if (!string.IsNullOrEmpty(customMeHorsemenVelocitySoundsPath))
-                {
-                    return customMeHorsemenVelocitySoundsPath;
-                }
-
-            }
-            string pathToHorsemen = path.Replace("XROLE", "Horsemen");
-            string customSoundPath = FindCustomSound(pathToHorsemen);
-            if (!string.IsNullOrEmpty(customSoundPath))
-                return customSoundPath;
-            return null;
-        }
-        static string FindCustomSound(string soundPath) //are you happy now curtis?
-        {
-            if (string.IsNullOrEmpty(soundPath)) return null;
-            string[] files;
-            string dir = Path.GetDirectoryName(soundPath);
-            if (!Directory.Exists(dir)) goto CheckExtension;
-            files = Directory.GetFiles(Path.GetDirectoryName(soundPath), Path.GetFileName(soundPath) + ".*");
-            if (files.Length < 1)
-            {
-                goto CheckExtension;
-            }
-
-            return files[0];
-
-        CheckExtension:
-            if (string.IsNullOrEmpty(curExtension)) return null;
-            string extensionPath = soundPath.Replace(soundpack, curExtension);
-            dir = Path.GetDirectoryName(extensionPath);
-            if (!Directory.Exists(dir)) return null;
-            files = Directory.GetFiles(Path.GetDirectoryName(extensionPath), Path.GetFileName(extensionPath) + ".*");
-            if (files.Length < 1)
-            {
-                return null;
-            }
-            return files[0];
-        }
-        public static void LoadSoundpack(string selection)
-        {
-            if (selection == "No Soundpack")
-            {
-                soundpack = "No Soundpack"; AudioController p = UnityEngine.Object.FindObjectOfType<AudioController>();
-                string cuMusic = p.currentMusicSound.Split('/')[2];
-                p.StopMusic();
-                p.PlayMusic($"Audio/Music/{cuMusic}"); return;
-            }
-            string llll = soundpacks[selection];
-            if (!string.IsNullOrEmpty(llll))
-            {
-                soundpack = Path.Combine(llll, selection);
             }
             else
             {
-                soundpack = selection;
+                List<string> nonGameplayList = ogSoundPathNames.ShallowCopy();
+                if (customTriggers.Resolve(nonGameplayList, false, null)) return cachedSound.Value;
             }
-            curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
-            AudioController a = UnityEngine.Object.FindObjectOfType<AudioController>();
-            string curMusic = a.currentMusicSound.Split('/')[2];
-            a.StopMusic();
-            a.PlayMusic($"Audio/Music/{curMusic}");
         }
-        public static List<string> GetSubfolders()
+        if (FindCustomSound(ogSoundPathNames)) return cachedSound.Value; else return null;
+    }
+    public static bool Resolve(this List<CustomTrigger> triggers, List<string> path, bool useList, string velocity)
+    {
+        List<CustomTrigger> t = triggers.ShallowCopy();
+        for (int i = 0; i < t.Count; i++)
         {
-            List<string> options = new(){
+            CustomTrigger trigger = t[i];
+            if (!trigger.IsActivated(path)) continue;
+            List<string> resolve = trigger.GetPath(path, useList, velocity);
+            if (resolve == null) continue;
+            if (cachedSound.Key == resolve) return true;
+            if (trigger.worksWithOthers && i != t.Count - 1)
+            {
+                //* for future me: im using a binary number to go through the list and in each iteration subtracting 1 from the num: ex. 1111 -> check full list, 1101 -> check list except the one before last.
+                //? i spent three whole days on this. there aren't even enough triggers to use this LOL.
+                var array = t.GetRange(i + 1, t.Count - 1 - i).Where(x => x.IsActivated(path) && x.worksWithOthers).ToArray();
+                int n = array.Length;
+                int max = 1 << n;
+                for (int j = max - 1; j > 0; j--)
+                {
+                    List<string> resolveWorking = resolve.ShallowCopy();
+                    List<CustomTrigger.Type> usedTypes = new() { trigger.type };
+                    int reversedI = MiscUtils.ReverseBits(j, n);
+                    for (int k = 0; k < n; k++)
+                    {
+                        if (usedTypes.Count == 3) break;
+                        if ((reversedI & (1 << k)) == 0) continue;
+                        CustomTrigger t2 = array[k];
+                        if (usedTypes.Contains(t2.type)) continue;
+                        usedTypes.Add(t2.type);
+                        resolveWorking = t2.GetPath(resolveWorking, useList, velocity);
+                    }
+                    if (!string.IsNullOrEmpty(velocity)) resolveWorking[2] = velocity + resolveWorking[2];
+                    if (useList)
+                        foreach (CustomTrigger x in flattenedList)
+                        {
+                            if (!FindCustomSound(x.GetPath(resolveWorking, useList, velocity))) continue;
+                            return true;
+                        }
+                    if (!FindCustomSound(resolveWorking)) continue;
+                    return true;
+                }
+            }
+            if (!string.IsNullOrEmpty(velocity)) resolve[2] = velocity + resolve[2];
+            if (useList)
+                foreach (CustomTrigger x in flattenedList)
+                {
+                    if (!FindCustomSound(x.GetPath(resolve))) continue;
+                    return true;
+                }
+            if (!FindCustomSound(resolve)) continue;
+            return true;
+        }
+        return false;
+    }
+    public static List<CustomTrigger> Flat(this List<CustomTrigger> triggers)
+    {
+        List<CustomTrigger> flattenedList = new();
+        triggers.Where(x => x.IsActivated(null)).ForEach(x =>
+        {
+            if (x is GroupTriggers)
+                flattenedList.AddRange(x.FullTriggers());
+            else flattenedList.Add(x);
+        });
+        return flattenedList;
+    }
+    static void PrepareNonGameplayTriggers()
+    {
+        customTriggers.AddRange([
+            new CustomTrigger(() => "DrawMusic", CustomTrigger.Type.Name, (s) => draw && s[2] == "CovenVictory"),
+                new CustomTrigger(() => {if(win) return "VictoryMusic"; return "DefeatMusic";}, CustomTrigger.Type.Name, (s) => s[2] == "LoginMusicLoop_old")
+        ]);
+    }
+    static void PrepareVelocityTriggers()
+    {
+        customVelocityTriggers.AddRange([
+            new GroupTriggers([
+                new CustomTrigger(()=>"Prosecutor", CustomTrigger.Type.Suffix, (s) => prosecutor),
+                new CustomTrigger(()=>"Player", CustomTrigger.Type.Prefix, (s) => playerOnStand),
+                new CustomTrigger(()=>"Target", CustomTrigger.Type.Prefix, (s) => roleData.role == Role.EXECUTIONER && targetOnStand && Pepper.AmIAlive())
+            ], (s)=>s[2] == "Judgement"),
+            new GroupTriggers([
+                new CustomTrigger(() => "PartyMusic", CustomTrigger.Type.Name, (s) => isParty),
+                new CustomTrigger(() => "JailedMusic", CustomTrigger.Type.Name, (s) => isJailed,callback: () => {isJailed = false;}),
+                new CustomTrigger(() => "DueledMusic", CustomTrigger.Type.Name, (s) => isDueled,callback: () => {isDueled = false;})
+            ], (s) => s[2] == "NightMusic", callback: () => {isTribunal = false;}),
+            new CustomTrigger(()=>"TribunalMusic", CustomTrigger.Type.Name, (s) => s[2] == "VotingMusic" && isTribunal)
+        ]);
+    }
+    static void PrepareGameplayTriggers()
+    {
+        customGameplayTriggers.AddRange([
+            ..customVelocityTriggers,
+                new CustomTrigger(()=>"NonBinary", CustomTrigger.Type.Name, (s) => isNB && s.Any(x => x.Contains("Male")), replacing: "Male")
+        ]);
+    }
+    static void PrepareFolderTriggers()
+    {
+        customFolderTriggers.AddRange([
+            new CustomTrigger(() => "Town Traitor", CustomTrigger.Type.Folder, (s) => isTT),
+            new GroupTriggers([
+                new GroupTriggers([
+                    new CustomTrigger(() => {
+                            switch (roleData.role)
+                            {
+                                case Role.SOULCOLLECTOR:
+                                return "Death";
+                                case Role.BERSERKER:
+                                return "War";
+                                case Role.PLAGUEBEARER:
+                                return "Pestilence";
+                                case Role.BAKER:
+                                return "Famine";
+                            }
+                            return roleData.roleName;
+                        }, CustomTrigger.Type.Folder, (s) => true),
+                    new CustomTrigger(() => "TransformedHorseman", CustomTrigger.Type.Folder, (s) => true)
+                ], (s) => Service.Game.Sim.info.roleCardObservation.Data.defense == 3 && roleData.factionType == FactionType.APOCALYPSE),
+                new CustomTrigger(() => "Horsemen", CustomTrigger.Type.Folder, (s) => true)
+            ],(s) => pest || war || death || fam),
+            new CustomTrigger(() => "Dead", CustomTrigger.Type.Folder, (s) => !Pepper.AmIAlive()),
+            new CustomTrigger(() => alignment, CustomTrigger.Type.Folder, (s) => true),
+            new CustomTrigger(() => $"{alignment} {roleData.subAlignment.ToString().ToTitleCase()}", CustomTrigger.Type.Folder, (s) => true),
+            new CustomTrigger(() => roleData.roleName, CustomTrigger.Type.Folder, (s) => true)
+        ]);
+    }
+    static void PrepareTriggers()
+    {
+        PrepareFolderTriggers();
+        PrepareNonGameplayTriggers();
+        PrepareVelocityTriggers();
+        PrepareGameplayTriggers();
+    }
+    public static bool FindCustomSound(List<string> soundPathArray)
+    {
+        if (soundPathArray == null) return false;
+        if (soundPathArray == cachedSound.Key) return true;
+        List<string> list = soundPathArray.ShallowCopy();
+        if (list[0] != "Audio") list.Insert(0, soundpack);
+        else list[0] = soundpack;
+        list.Insert(0, directoryPath);
+        string soundPath = Path.Combine(list.ToArray());
+
+        string[] files;
+        string dir = Path.GetDirectoryName(soundPath);
+        if (!Directory.Exists(dir)) goto CheckExtension;
+        files = Directory.GetFiles(dir, Path.GetFileName(soundPath) + ".*");
+        if (files.Length < 1) goto CheckExtension;
+        if(files.Length > 1 && ModSettings.GetBool("Allow Randomized Tracks","JAN.soundpacks")){
+            System.Random r = new();
+            
+            cachedSound.SetValues(soundPathArray, files[r.Next(files.Length)]);
+        }
+        else cachedSound.SetValues(soundPathArray, files[0]);
+        return true;
+
+    CheckExtension:
+        if (string.IsNullOrEmpty(curExtension)) return false;
+        string extensionPath = soundPath.Replace(soundpack, curExtension);
+        dir = Path.GetDirectoryName(extensionPath);
+        if (!Directory.Exists(dir)) return false;
+        files = Directory.GetFiles(dir, Path.GetFileName(extensionPath) + ".*");
+        if (files.Length < 1)
+        {
+            return false;
+        }
+        cachedSound.SetValues(soundPathArray, files[0]);
+        return true;
+    }
+    public static void LoadSoundpack(string selection)
+    {
+        if (selection == "No Soundpack")
+        {
+            soundpack = "No Soundpack"; AudioController p = UnityEngine.Object.FindObjectOfType<AudioController>();
+            string cuMusic = p.currentMusicSound.Split('/')[2];
+            p.StopMusic();
+            p.PlayMusic($"Audio/Music/{cuMusic}"); return;
+        }
+        Debug.LogWarning(soundpacks.TryGetValue(selection, out string llll));
+
+        Debug.Log(llll);
+        if (!string.IsNullOrEmpty(llll))
+        {
+            soundpack = Path.Combine(llll, selection);
+        }
+        else
+        {
+            soundpack = selection;
+        }
+        curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
+        AudioController a = UnityEngine.Object.FindObjectOfType<AudioController>();
+        string curMusic = a.currentMusicSound;
+        a.StopMusic();
+        a.PlayMusic(curMusic);
+    }
+    public static List<string> GetSubfolders()
+    {
+        List<string> options = new(){
                 "No Subfolder"
             };
-            foreach (string dir in subfolders)
-            {
-                options.Add(dir);
-            }
-            return options;
-        }
-        public static void ForSoundpackMod()
+        foreach (string dir in subfolders)
         {
-
-            directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-            Debug.Log(directoryPath);
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-            Debug.Log("Working?");
-            string[] fullDirectories = Directory.GetDirectories(directoryPath);
-            foreach (string dir in fullDirectories)
-            {
-                string[] insides = Directory.GetDirectories(dir);
-                if (insides.Any(n => toCheck.Contains(Path.GetFileName(n))))
-                {
-                    soundpacks.Add(Path.GetFileName(dir), null);
-                }
-                else
-                {
-                    string dirName = Path.GetFileName(dir);
-                    subfolders.Add(dirName);
-                    foreach (string L in insides)
-                    {
-                        soundpacks.Add(Path.GetFileName(L), dirName);
-                    }
-                }
-            }
-            string v = ModSettings.GetString("Selected Soundpack");
-            if (v == "No Soundpack" || !soundpacks.ContainsKey(v)) { soundpack = "No Soundpack"; return; }
-            string b = soundpacks[v];
-            soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
-            curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
+            options.Add(dir);
         }
-        public static string FindExtension(string MeWhen)
+        return options;
+    }
+    public static void ForSoundpackMod()
+    {
+        PrepareTriggers();
+        directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+        Debug.Log(directoryPath);
+        if (!Directory.Exists(directoryPath))
         {
-            if (!File.Exists(MeWhen)) return null;
-            string file = File.ReadAllText(MeWhen);
-            if (!soundpacks.ContainsKey(file)) return null;
-            string b = soundpacks[file];
-            return string.IsNullOrEmpty(b) ? file : Path.Combine(b, file);
+            Directory.CreateDirectory(directoryPath);
         }
-        public static List<string> GetSoundpacks()
+        Debug.Log("Working?");
+        SoundpacksDebugger.GetInstance();
+        string[] fullDirectories = Directory.GetDirectories(directoryPath);
+        foreach (string dir in fullDirectories)
         {
-            List<string> options = new(){
-                "No Soundpack"
-            };
-            foreach (KeyValuePair<string, string> pair in soundpacks)
+            string[] insides = Directory.GetDirectories(dir);
+            if (insides.Any(n => toCheck.Contains(Path.GetFileName(n))))
             {
-                options.Add(pair.Key);
-            }
-            return options;
-        }
-        public static void OpenSoundpackDirectory()
-        {
-            string text = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
-            if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                System.Diagnostics.Process.Start("open", "\"" + text + "\""); //code stolen from tuba
+                soundpacks.Add(Path.GetFileName(dir), null);
             }
             else
             {
-                Application.OpenURL("file://" + text);
-            }
-
-        }
-
-
-        //this stuff i got from a 2d beat saber game i did like a year ago.
-
-        public static AudioType GetAudioType(string extension)
-        {
-            extension = extension.ToLower();
-
-            switch (extension)
-            {
-                case ".wav":
-                    return AudioType.WAV;
-                case ".mp3":
-                    return AudioType.MPEG;
-                case ".ogg":
-                    return AudioType.OGGVORBIS;
-                case ".aiff":
-                    return AudioType.AIFF;
-                case ".mod":
-                    return AudioType.MOD;
-                default:
-                    Debug.LogWarning("AudioUtility: La extensión de archivo " + extension + " no es compatible.");
-                    return AudioType.UNKNOWN;
+                string dirName = Path.GetFileName(dir);
+                subfolders.Add(dirName);
+                foreach (string L in insides)
+                {
+                    soundpacks.Add(Path.GetFileName(L), dirName);
+                }
             }
         }
-
+        string v = ModSettings.GetString("Selected Soundpack");
+        if (v == "No Soundpack" || !soundpacks.ContainsKey(v)) { soundpack = "No Soundpack"; return; }
+        string b = soundpacks[v];
+        soundpack = string.IsNullOrEmpty(b) ? v : Path.Combine(b, v);
+        curExtension = FindExtension(Path.Combine(directoryPath, soundpack, "extension.txt"));
     }
-    class CustomTrigger
+    public static string FindExtension(string MeWhen)
     {
-        public string info;
-        public enum Type
+        if (!File.Exists(MeWhen)) return null;
+        string file = File.ReadAllText(MeWhen);
+        if (!soundpacks.ContainsKey(file)) return null;
+        string b = soundpacks[file];
+        return string.IsNullOrEmpty(b) ? file : Path.Combine(b, file);
+    }
+    public static List<string> GetSoundpacks()
+    {
+        List<string> options = new(){
+                "No Soundpack"
+            };
+        foreach (KeyValuePair<string, string> pair in soundpacks)
         {
-            Prefix,
-            Suffix,
-            Name,
-            Folder
-        };
-        public bool worksWithOthers;
-        public Func<bool> activated;
+            options.Add(pair.Key);
+        }
+        return options;
+    }
+    public static void OpenSoundpackDirectory()
+    {
+        string text = Path.Combine(Directory.GetCurrentDirectory(), "SalemModLoader", "ModFolders", "Soundpacks");
+        if (Environment.OSVersion.Platform == PlatformID.MacOSX || Environment.OSVersion.Platform == PlatformID.Unix)
+        {
+            System.Diagnostics.Process.Start("open", "\"" + text + "\""); //code stolen from tuba
+        }
+        else
+        {
+            Application.OpenURL("file://" + text);
+        }
+
     }
 
+
+    //this stuff i got from a 2d beat saber game i did like a year ago.
+
+    public static AudioType GetAudioType(string extension)
+    {
+        extension = extension.ToLower();
+
+        switch (extension)
+        {
+            case ".wav":
+                return AudioType.WAV;
+            case ".mp3":
+                return AudioType.MPEG;
+            case ".ogg":
+                return AudioType.OGGVORBIS;
+            case ".aiff":
+                return AudioType.AIFF;
+            case ".mod":
+                return AudioType.MOD;
+            default:
+                Debug.LogWarning("AudioUtility: La extensión de archivo " + extension + " no es compatible.");
+                return AudioType.UNKNOWN;
+        }
+    }
+
+}
+public class GroupTriggers : CustomTrigger
+{
+    public GroupTriggers(List<CustomTrigger> triggers, Func<List<string>, bool> GroupCondition, bool checkForFolders = false, Action callback = null)
+    : base(null, Type.Group, GroupCondition, callback, false)
+    {
+        this.triggers = triggers;
+        this.checkForFolders = checkForFolders;
+    }
+    public bool checkForFolders;
+    public List<CustomTrigger> triggers;
+    override public List<string> GetPath(List<string> path, bool useList = true, string velocity = null)
+    {
+        if (callback != null) callback();
+        bool smth = triggers.Resolve(path, useList, velocity);
+        if (smth) return SoundpackUtils.cachedSound.Key;
+        else return null;
+    }
+    public override List<CustomTrigger> FullTriggers()
+    {
+        return triggers.Flat();
+    }
+}
+public class CustomTrigger
+{
+    public Func<string> info;
+    public enum Type
+    {
+        Prefix,
+        Suffix,
+        Name,
+        Folder,
+        Group
+    };
+    public Type type;
+    public bool worksWithOthers;
+    public Func<List<string>, bool> IsActivated;
+    public Action callback;
+    public string replacing;
+    public Action callbackIfFound;
+    public CustomTrigger(Func<string> info, Type type, Func<List<string>, bool> activated, Action callback = null, bool worksWithOthers = false, string replacing = null, Action callbackIfFound = null)
+    {
+        this.info = info;
+        this.type = type;
+        IsActivated = activated;
+        this.callback = callback;
+        this.worksWithOthers = worksWithOthers;
+        this.replacing = replacing;
+        this.callbackIfFound = callbackIfFound;
+    }
+    virtual public List<string> GetPath(List<string> path, bool useList = true, string velocity = null)
+    {
+        List<string> r = path.ShallowCopy();
+        if (callback != null) callback();
+
+        switch (type)
+        {
+            case Type.Name:
+                if (replacing != null)
+                {
+                    r[path.Count - 1] = r[r.Count - 1].Replace(replacing, info());
+                    return r;
+                }
+                r[r.Count - 1] = info();
+                return r;
+            case Type.Suffix:
+                r[r.Count - 1] = path.Last() + info();
+                return r;
+            case Type.Prefix:
+                r[r.Count - 1] = info() + path.Last();
+                return r;
+            case Type.Folder:
+                r[0] = info();
+                return r;
+        }
+        return null;
+    }
+    virtual public List<CustomTrigger> FullTriggers()
+    {
+        return null;
+    }
 }
